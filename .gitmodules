@@ -1,0 +1,3 @@
+[submodule "qwasm"]
+	path = qwasm
+	url = https://github.com/reenboog/qwasm
