@@ -1,0 +1,55 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "npm: build-wasm",
+			"type": "shell",
+			"command": "npm run build:wasm",
+			"args": [],
+			"group": {
+				"kind": "test",
+				"isDefault": false
+			}
+		},
+		{
+			"label": "npm: start",
+			"type": "shell",
+			"command": "npm run start",
+			"args": [],
+			"group": {
+				"kind": "test",
+				"isDefault": false
+			}
+		},
+		{
+			"label": "rust: cargo fmt",
+			"type": "shell",
+			"command": "cargo fmt --manifest-path ./qwasm/Cargo.toml",
+			"args": [],
+			"group": {
+				"kind": "test",
+				"isDefault": false
+			}
+		},
+		{
+			"label": "rust: cargo nextest",
+			"type": "shell",
+			"command": "cargo nextest run --manifest-path ./qwasm/Cargo.toml",
+			"args": [],
+			"group": {
+				"kind": "test",
+				"isDefault": false
+			}
+		},
+		{
+			"label": "rust: cargo test",
+			"type": "shell",
+			"command": "cargo test --manifest-path ./qwasm/Cargo.toml",
+			"args": [],
+			"group": {
+				"kind": "test",
+				"isDefault": false
+			}
+		},
+	]
+}
