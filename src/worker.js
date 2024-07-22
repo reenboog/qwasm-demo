@@ -1,9 +1,13 @@
 // src/worker.js
 /* eslint-disable no-restricted-globals */
 
-import init, * as wasm from 'qwasm/qwasm';
+import init, { Protocol } from "qwasm";
 
 let wasmInitialized = false;
+
+function setWasmInitialized() {
+  wasmInitialized = true;
+}
 
 const initializeWasm = async () => {
   await init();
@@ -22,12 +26,12 @@ self.onmessage = async (e) => {
 
   try {
     switch (type) {
-      case 'encrypt':
-        // result = wasm.sign_msg_to_str(new Uint8Array([1, 2, 3]));
-        result = wasm.encrypt(payload);
+      case 'encrypt_block_for_file':
+        // wont' work, since protocol would be to instantiate/deserialize here instead
+        result = payload.protocol.encrypt_block_for_file(payload.data, payload.fileId);
         break;
-      case 'decrypt':
-        result = wasm.decrypt(payload);
+      case 'decrypt_block_for_file':
+        result = payload.protocol.decrypt_block_for_file(payload.data, payload.fileId);
         break;
       default:
         result = 'Unknown type';
@@ -38,5 +42,7 @@ self.onmessage = async (e) => {
 
   self.postMessage({ type, result });
 };
+
+export { setWasmInitialized };
 
 /* eslint-enable no-restricted-globals */

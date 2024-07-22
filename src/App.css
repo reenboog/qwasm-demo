@@ -36,3 +36,17 @@
     transform: rotate(360deg);
   }
 }
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.rotating-text {
+  display: inline-block;
+  animation: rotate 2s linear infinite;
+}

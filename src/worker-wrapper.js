@@ -17,11 +17,11 @@ export default class WorkerWrapper {
     });
   }
 
-  encrypt(data) {
-    return this.runTask('encrypt', data);
-  }
+  // encrypt_block_for_file(protocol, fileId, data) {
+  //   return this.runTask('encrypt_block_for_file', { protocol, fileId, data });
+  // }
 
-  decrypt(data) {
-    return this.runTask('decrypt', data);
-  }
+  // decrypt_block_for_file(protocol, fileId, data) {
+  //   return this.runTask('decrypt_block_for_file', { protocol, fileId, data });
+  // }
 }
