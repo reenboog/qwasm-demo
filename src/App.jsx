@@ -1,38 +1,24 @@
 import React, { useEffect, useState } from 'react';
-// import init, { User, register_as_god, add, mul, sub, pow2, sign_msg, sign_msg_to_str, gen_kp_x448_to_str, hkdf_ikm56_to_str, unlock_with_pass } from "qwasm";
 import init, { Protocol, JsNet } from "qwasm";
-import './App.css';
-
-import WorkerWrapper from './worker-wrapper';
-import { setWasmInitialized } from './worker';
-
-const worker = new WorkerWrapper();
 
 const App = (protocol) => {
-  // const [encryptResult, setEncryptResult] = useState(null);
-  // const [decryptResult, setDecryptResult] = useState(null);
-  // const [loading, setLoading] = useState(false);
-
-  // const handleEncrypt = async (data) => {
-  //   setLoading(true);
-  //   const result = await worker.encrypt(data);
-  //   setEncryptResult(result);
-  //   setLoading(false);
-  // };
-
-  // const handleDecrypt = async (data) => {
-  //   setLoading(true);
-  //   const result = await worker.decrypt(data);
-  //   setDecryptResult(result);
-  //   setLoading(false);
-  // };
-
   useEffect(() => {
     init().then(() => {
-      // setWasmInitialized();
-      // should throw or return an error
+      // returns an utf-8 encoded array of locked nodes
       async function fetch_subtree(parent_id) {
-        // Serialize the array to JSON string
+        // 1 gets a json-serialized array of locked nodes (RESPECT dirty) where parent = parent_id
+        // 2 utf8-encode to a byte array
+        // 3 return
+        // 4' may throw
+
+        // if (!response.ok) {
+          // throw new Error(JSON.stringify({
+          //   message: `HTTP error! status: ${response.status}`,
+          //   status: response.status,
+          //   recentHash: "exampleRecentHash"
+          // }));
+        // }
+
         const data = [1, 2, 3]
         const jsonString = JSON.stringify(data);
 
@@ -45,6 +31,7 @@ const App = (protocol) => {
       }
 
       // should throw or return an error
+      // accepts an array of utf-8 encoded json objects (NOT STRINGS)
       async function upload_nodes(nodes) {
         nodes.forEach(function (node) {
           const encoder = new TextDecoder();
@@ -55,34 +42,47 @@ const App = (protocol) => {
         });
       }
 
-      // create a callbacks object
-      const net = new JsNet(fetch_subtree, upload_nodes);
+      let god_json;
       const pass = "123";
-      // instantiate a protocol
-      let god = Protocol.register_as_god(pass, net);
-      let protocol = god.as_protocol();
+      {
+        // create a callbacks object
+        // this will be consumed by register_as_god, hence we're in an isolated scope here
+        const net = new JsNet(fetch_subtree, upload_nodes);
+        // instantiate a protocol
+        let god = Protocol.register_as_god(pass, net);
+        god_json = god.json();
+      }
+
+      const net = new JsNet(fetch_subtree, upload_nodes);
+      let protocol = Protocol.unlock_with_pass(pass, god_json, net);
+      // let protocol = god.as_protocol();
 
       function log_dir(dir) {
         console.log("dir: " + dir.name())
         console.log("children:")
+        
         dir.items().forEach(function (item) {
           let ext = item.is_dir() ? "(dir)" : "." + item.ext();
 
           console.log(item.name() + ext);
         });
+        
         console.log("")
       }
 
       function genFile() {
-        const size = 100 * 1024 * 1024; // 1 MB in bytes
-        const uint8Array = new Uint8Array(size);
+        const size = 1 * 1024 * 1024; // 1 MB in bytes
+        const buf = new Uint8Array(size);
 
-        // Fill the array with random values
+        // TODO: SharedArrayBuffer could be used to avoid copying, but it might require
+        // some server headers to be change for support
+
+        // redAFill the array with random values
         for (let i = 0; i < size; i++) {
-          uint8Array[i] = Math.floor(Math.random() * 256);
+          buf[i] = Math.floor(Math.random() * 256);
         }
 
-        return uint8Array;
+        return buf;
       }
 
       async function simulateWork() {
@@ -168,13 +168,6 @@ const App = (protocol) => {
 
   return (
     <div>
-      {/* <button onClick={() => handleEncrypt(new Uint8Array([1, 2, 3, 4]))}>Encrypt</button>
-      <button onClick={() => handleDecrypt(new Uint8Array([6, 7, 8, 9, 10]))}>Decrypt</button>
-      {loading ? <p>Loading...</p> : null}
-      <p>Encrypt Result: {encryptResult}</p>
-      <p>Decrypt Result: {decryptResult}</p> */}
-      {/* <p>registering</p> */}
-      {/* <p className="rotating-text">registering</p> */}
       <button>wow</button>
     </div>
   );
