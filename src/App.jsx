@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import init, { Protocol, JsNet } from "qwasm";
 
 const App = (protocol) => {
+  const [loading, setLoading] = useState("loading");
+
   useEffect(() => {
     init().then(() => {
+      setLoading("ready");
       // returns an utf-8 encoded array of locked nodes
       async function fetch_subtree(parent_id) {
         // 1 gets a json-serialized array of locked nodes (RESPECT dirty) where parent = parent_id
@@ -155,6 +158,24 @@ const App = (protocol) => {
           }
 
           console.log("done");
+
+          {
+            console.log("announcements:");
+            const starttime = performance.now();
+
+            const msg_ct = await protocol.encrypt_announcement("hi there");
+            const endtime = performance.now();
+
+            // calculate the time difference
+            const timetaken = endtime - starttime;
+            console.log(`time taken: ${timetaken} milliseconds; len: ` + ct.length);
+
+            console.log(msg_ct);
+
+            const msg = await protocol.decrypt_announcement(msg_ct);
+
+            console.log(msg);
+          }
           // console.log(pt);
         } catch (e) {
           console.error("Error fetching current list:", e);
@@ -168,6 +189,7 @@ const App = (protocol) => {
 
   return (
     <div>
+      <p>{loading}</p>
       <button>wow</button>
     </div>
   );
