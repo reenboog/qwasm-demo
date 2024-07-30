@@ -157,7 +157,28 @@ const App = (protocol) => {
             // let pt = protocol.decrypt_block_for_file(ct, file_id);
           }
 
-          console.log("done");
+          {
+            console.log('encrypting & decrypting a file in chunks. file: ' + file.length)
+
+            const midpoint = Math.floor(file.length / 2);
+            let msg0 = file.slice(0, midpoint);
+            let msg1 = file.slice(midpoint);
+            
+            const starttime = performance.now();
+
+            let ct0 = await protocol.chunk_encrypt_for_file(msg0, file_id, 0);
+            let ct1 = await protocol.chunk_encrypt_for_file(msg1, file_id, 1);
+
+            let pt0 = await protocol.chunk_decrypt_for_file(ct0, file_id, 0);
+            let pt1 = await protocol.chunk_decrypt_for_file(ct1, file_id, 1);
+
+            console.log("decrypted file size = " + (pt0.length + pt1.length));
+
+            const endtime = performance.now();
+
+            const timetaken = endtime - starttime;
+            console.log(`time taken: ${timetaken} milliseconds`);
+          }
 
           {
             console.log("announcements:");
@@ -168,7 +189,7 @@ const App = (protocol) => {
 
             // calculate the time difference
             const timetaken = endtime - starttime;
-            console.log(`time taken: ${timetaken} milliseconds; len: ` + ct.length);
+            console.log(`time taken: ${timetaken} milliseconds`);
 
             console.log(msg_ct);
 
