@@ -1,8 +1,8 @@
 .app {
   padding: 20px;
-  background-color: #0d1117;
-  color: #ffffff;
-  font-family: Arial, sans-serif;
+  background-color: #ffffff;
+  color: #24292e;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   min-height: 100vh;
   position: relative;
 }
@@ -18,31 +18,35 @@
 .header h1 {
   font-size: 2rem;
   font-weight: bold;
+  color: #24292e;
 }
 
 .header p {
   font-size: 1rem;
   margin-bottom: 10px;
+  color: #586069;
 }
 
 .upload-button-container {
   display: flex;
   justify-content: flex-end;
   width: 100%;
-  /* margin-bottom: 20px; */
 }
 
 .upload-button {
-  padding: 10px 20px;
-  background-color: #6c63ff;
+  padding: 5px 12px;
+  background-color: #2ea043;
   color: white;
-  border: none;
-  border-radius: 50px;
+  border: 1px solid rgba(27, 31, 35, 0.15);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
   cursor: pointer;
 }
 
 .upload-button:hover {
-  background-color: #5a54d6;
+  background-color: #22863a;
 }
 
 .table-container {
@@ -57,23 +61,40 @@
 
 .file-table th,
 .file-table td {
-  padding: 10px;
+  padding: 8px 16px;
   text-align: left;
-  border-bottom: 1px solid #333;
-  height: 48px;
+  border-bottom: 1px solid #e1e4e8;
+  height: 38px;
+}
+
+.file-table th.name-column,
+.file-table td.name-column {
+  width: 40%;
+}
+
+.file-table th.created-at-column,
+.file-table td.created-at-column {
+  width: 30%;
+}
+
+.file-table th.type-column,
+.file-table td.type-column {
+  width: 30%;
 }
 
 .file-table th {
-  font-weight: bold;
+  font-weight: 500;
+  background-color: #f6f8fa;
+  color: #24292e;
 }
 
-.file-table tr {
-  background-color: transparent;
+.file-table tbody tr {
+  background-color: #ffffff;
   cursor: pointer;
 }
 
 .file-table tbody tr:hover {
-  background-color: #1f2937;
+  background-color: #f6f8fa;
   cursor: pointer;
 }
 
@@ -90,15 +111,15 @@
 }
 
 .pdf-icon {
-  color: #cc0000;
+  color: #d73a49;
 }
 
 .image-icon {
-  color: #ff7f50;
+  color: #6a737d;
 }
 
 .video-icon {
-  color: #f312ca;
+  color: #2ea043;
 }
 
 .archive-icon {
@@ -106,7 +127,7 @@
 }
 
 .file-icon {
-  color: #d3d3d3;
+  color: #586069;
 }
 
 .drop-zone-overlay {
@@ -115,7 +136,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(255, 255, 255, 0.9);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -123,38 +144,45 @@
 }
 
 .drop-zone {
-  border: 2px dashed #6c63ff;
+  border: 2px dotted #0366d6;
   border-radius: 10px;
   padding: 50px;
 }
 
 .drop-zone p {
   font-size: 1.5rem;
-  color: #6c63ff;
+  color: #0366d6;
+}
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-container {
+  display: inline-flex;
+  align-items: center;
 }
 
 .breadcrumb {
   cursor: pointer;
-  color: #ffffff;
-  opacity: 0.9;
-  /* text-decoration: underline; */
-  font-weight:lighter;
+  color: #0366d6;
+  font-weight: 400;
 }
 
 .breadcrumb-current-dir {
-  cursor: pointer;
-  color: #ffffff;
-  opacity: 0.9;
-  font-weight:bold;
+  color: #586069;
+  font-weight: bold;
 }
 
 .breadcrumb:hover {
-  color: #5a54d6;
+  color: #012347;
+  text-decoration: underline;
 }
 
 .breadcrumb-delimiter {
   font-size: 0.7rem;
-  margin: 0 12px;
-  opacity: 0.3;
-  color: #ffffff;
+  margin: 0 6px;
+  opacity: 0.5;
+  color: #586069;
 }
