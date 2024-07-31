@@ -29,7 +29,7 @@
   display: flex;
   justify-content: flex-end;
   width: 100%;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
 }
 
 .upload-button {
@@ -72,12 +72,41 @@
   cursor: pointer;
 }
 
-.file-table tr:hover {
+.file-table tbody tr:hover {
   background-color: #1f2937;
+  cursor: pointer;
 }
 
 .file-icon {
   margin-right: 10px;
+}
+
+.folder-icon {
+  color: #f39c12;
+}
+
+.word-icon {
+  color: #2a5699;
+}
+
+.pdf-icon {
+  color: #cc0000;
+}
+
+.image-icon {
+  color: #ff7f50;
+}
+
+.video-icon {
+  color: #f312ca;
+}
+
+.archive-icon {
+  color: #f39c12;
+}
+
+.file-icon {
+  color: #d3d3d3;
 }
 
 .drop-zone-overlay {
@@ -102,4 +131,30 @@
 .drop-zone p {
   font-size: 1.5rem;
   color: #6c63ff;
+}
+
+.breadcrumb {
+  cursor: pointer;
+  color: #ffffff;
+  opacity: 0.9;
+  /* text-decoration: underline; */
+  font-weight:lighter;
+}
+
+.breadcrumb-current-dir {
+  cursor: pointer;
+  color: #ffffff;
+  opacity: 0.9;
+  font-weight:bold;
+}
+
+.breadcrumb:hover {
+  color: #5a54d6;
+}
+
+.breadcrumb-delimiter {
+  font-size: 0.7rem;
+  margin: 0 12px;
+  opacity: 0.3;
+  color: #ffffff;
 }
