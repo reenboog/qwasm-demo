@@ -1,15 +1,21 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { FaChevronRight } from 'react-icons/fa';
 
 const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadClick, onFileAddClick, onDirAddClick }) => {
+	const fileInputRef = useRef(null);
+
+	const handleButtonClick = () => {
+		fileInputRef.current.click();
+	};
+
 	return (
 		<tr>
 			<td colSpan="2">
 				<div className="breadcrumbs">
-					{breadcrumbs.slice().reverse().map((breadcrumb, index) => (
-						<span key={breadcrumb.id} className="breadcrumb-container">
-							<span onClick={() => onBreadcrumbClick(breadcrumb.id)} className="breadcrumb">
-								{breadcrumb.name}
+					{breadcrumbs.map((breadcrumb, index) => (
+						<span key={breadcrumb.id()} className="breadcrumb-container">
+							<span onClick={() => onBreadcrumbClick(breadcrumb.id())} className="breadcrumb">
+								{breadcrumb.name()}
 							</span>
 							<FaChevronRight className="breadcrumb-delimiter" />
 						</span>
@@ -19,9 +25,15 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadC
 			</td>
 			<td>
 				<div className="upload-button-container">
-					<button className="upload-button" onClick={onUploadClick}>Upload files</button>
+					<button className="upload-button" onClick={handleButtonClick}>Upload files</button>
+					<input
+						type="file"
+						ref={fileInputRef}
+						style={{ display: 'none' }}
+						onChange={onUploadClick}
+						multiple
+					/>
 					<button className="add-dir-button" onClick={onDirAddClick}>Add dir</button>
-					<button className="add-file-button" onClick={onFileAddClick}>Add file</button>
 				</div>
 			</td>
 		</tr>

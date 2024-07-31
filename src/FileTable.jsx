@@ -9,18 +9,16 @@ const FileTable = ({
 	handleBackClick,
 	handleBreadcrumbClick,
 	handleUpload,
-	handleFileAdd,
 	handleDirAdd
 }) => (
 	<div className="table-container">
 		<table className="file-table">
 			<thead>
 				<Breadcrumbs
-					breadcrumbs={currentDir.breadcrumbs}
-					currentDirName={currentDir.name}
+					breadcrumbs={currentDir.breadcrumbs()}
+					currentDirName={currentDir.name()}
 					onBreadcrumbClick={handleBreadcrumbClick}
 					onUploadClick={handleUpload}
-					onFileAddClick={handleFileAdd}
 					onDirAddClick={handleDirAdd}
 				/>
 				<tr>
@@ -30,7 +28,7 @@ const FileTable = ({
 				</tr>
 			</thead>
 			<tbody>
-				{currentDir.breadcrumbs.length !== 0 && (
+				{currentDir.breadcrumbs().length !== 0 && (
 					<tr key="back" onClick={handleBackClick}>
 						<td colSpan="3">
 							<FileIcon ext={null} />
@@ -38,7 +36,7 @@ const FileTable = ({
 						</td>
 					</tr>
 				)}
-				{currentDir.items.map((item, index) => (
+				{currentDir.items().map((item, index) => (
 					<FileTableRow key={index} item={item} onClick={handleItemClick} />
 				))}
 			</tbody>

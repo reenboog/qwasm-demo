@@ -1,386 +1,111 @@
-// import React, { useEffect, useState } from 'react';
-// import init, { Protocol, JsNet } from "qwasm";
-
-// const App = (protocol) => {
-//   const [loading, setLoading] = useState("loading");
-
-//   useEffect(() => {
-//     init().then(() => {
-//       setLoading("ready");
-//       // returns an utf-8 encoded array of locked nodes
-//       async function fetch_subtree(parent_id) {
-//         // 1 gets a json-serialized array of locked nodes (RESPECT dirty) where parent = parent_id
-//         // 2 utf8-encode to a byte array
-//         // 3 return
-//         // 4' may throw
-
-//         // if (!response.ok) {
-//           // throw new Error(JSON.stringify({
-//           //   message: `HTTP error! status: ${response.status}`,
-//           //   status: response.status,
-//           //   recentHash: "exampleRecentHash"
-//           // }));
-//         // }
-
-//         const data = [1, 2, 3]
-//         const jsonString = JSON.stringify(data);
-
-//         // Encode the JSON string to a byte array
-//         const encoder = new TextEncoder();
-//         const byteArray = encoder.encode(jsonString);
-
-//         // Return the byte array
-//         return byteArray;
-//       }
-
-//       // should throw or return an error
-//       // accepts an array of utf-8 encoded json objects (NOT STRINGS)
-//       async function upload_nodes(nodes) {
-//         nodes.forEach(function (node) {
-//           const encoder = new TextDecoder();
-//           const ar = encoder.decode(node);
-//           const node_json = JSON.parse(ar);
-
-//           console.log("uploaded: " + node_json);
-//         });
-//       }
-
-//       let god_json;
-//       const pass = "123";
-//       {
-//         // create a callbacks object
-//         // this will be consumed by register_as_god, hence we're in an isolated scope here
-//         const net = new JsNet(fetch_subtree, upload_nodes);
-//         // instantiate a protocol
-//         let god = Protocol.register_as_god(pass, net);
-//         god_json = god.json();
-//       }
-
-//       const net = new JsNet(fetch_subtree, upload_nodes);
-//       let protocol = Protocol.unlock_with_pass(pass, god_json, net);
-//       // let protocol = god.as_protocol();
-
-//       function log_dir(dir) {
-//         console.log("dir: " + dir.name())
-
-//         console.log("breadcrumbs:");
-//         dir.breadcrumbs().forEach(function (item) {
-//           console.log(item.name());
-//         });
-
-//         console.log("children:")
-//         dir.items().forEach(function (item) {
-//           let ext = item.is_dir() ? "(dir)" : "." + item.ext();
-
-//           console.log(item.name() + ext);
-//         });
-
-//         console.log("")
-//       }
-
-//       function genFile() {
-//         const size = 1 * 1024 * 1024; // 1 MB in bytes
-//         const buf = new Uint8Array(size);
-
-//         // TODO: SharedArrayBuffer could be used to avoid copying, but it might require
-//         // some server headers to be change for support
-
-//         // redAFill the array with random values
-//         for (let i = 0; i < size; i++) {
-//           buf[i] = Math.floor(Math.random() * 256);
-//         }
-
-//         return buf;
-//       }
-
-//       async function simulateWork() {
-//         try {
-//           log_dir(await protocol.ls_cur_mut());
-
-//           await protocol.mkdir("1");
-//           log_dir(await protocol.ls_cur_mut());
-
-//           let _2 = await protocol.mkdir("2");
-//           log_dir(await protocol.ls_cur_mut());
-
-//           console.log('cd-ing:');
-//           log_dir(await protocol.cd_to_dir(_2));
-
-//           console.log("cur ls:");
-//           log_dir(await protocol.ls_cur_mut());
-
-//           let _3 = await protocol.mkdir("3");
-//           log_dir(await protocol.ls_cur_mut());
-
-//           await protocol.cd_to_dir(_3);
-
-//           for (let i = 0; i < 10; i++) {
-//             await protocol.touch("file" + i, "png");
-//           }
-
-//           log_dir(await protocol.ls_cur_mut());
-
-//           log_dir(await protocol.go_back())
-//           log_dir(await protocol.go_back())
-//           log_dir(await protocol.go_back())
-//           log_dir(await protocol.go_back())
-
-//           log_dir(await protocol.cd_to_dir(_3));
-
-//           log_dir(await protocol.go_back())
-//           log_dir(await protocol.go_back())
-
-//           let file_id = await protocol.touch("encrypted", "txt");
-//           const file = genFile();
-
-//           let ct;
-//           {
-//             console.log("encrypting a file");
-
-//             const starttime = performance.now();
-
-//             ct = await protocol.encrypt_block_for_file(file, file_id);
-
-//             const endtime = performance.now();
-
-//             // calculate the time difference
-//             const timetaken = endtime - starttime;
-//             console.log(`time taken: ${timetaken} milliseconds; len: ` + ct.length);
-//             // let pt = protocol.decrypt_block_for_file(ct, file_id);
-//           }
-
-//           {
-//             console.log("decrypting a file");
-
-//             const starttime = performance.now();
-//             let pt = await protocol.decrypt_block_for_file(ct, file_id);
-//             const endtime = performance.now();
-
-//             // calculate the time difference
-//             const timetaken = endtime - starttime;
-//             console.log(`time taken: ${timetaken} milliseconds`);
-//             // let pt = protocol.decrypt_block_for_file(ct, file_id);
-//           }
-
-//           {
-//             console.log('encrypting & decrypting a file in chunks. file: ' + file.length)
-
-//             const midpoint = Math.floor(file.length / 2);
-//             let msg0 = file.slice(0, midpoint);
-//             let msg1 = file.slice(midpoint);
-
-//             const starttime = performance.now();
-
-//             let ct0 = await protocol.chunk_encrypt_for_file(msg0, file_id, 0);
-//             let ct1 = await protocol.chunk_encrypt_for_file(msg1, file_id, 1);
-
-//             let pt0 = await protocol.chunk_decrypt_for_file(ct0, file_id, 0);
-//             let pt1 = await protocol.chunk_decrypt_for_file(ct1, file_id, 1);
-
-//             console.log("decrypted file size = " + (pt0.length + pt1.length));
-
-//             const endtime = performance.now();
-
-//             const timetaken = endtime - starttime;
-//             console.log(`time taken: ${timetaken} milliseconds`);
-//           }
-
-//           {
-//             console.log("announcements:");
-//             const starttime = performance.now();
-
-//             const msg_ct = await protocol.encrypt_announcement("hi there");
-//             const endtime = performance.now();
-
-//             // calculate the time difference
-//             const timetaken = endtime - starttime;
-//             console.log(`time taken: ${timetaken} milliseconds`);
-
-//             console.log(msg_ct);
-
-//             const msg = await protocol.decrypt_announcement(msg_ct);
-
-//             console.log(msg);
-//           }
-//           // console.log(pt);
-//         } catch (e) {
-//           console.error("Error fetching current list:", e);
-//         }
-//       }
-
-//       // Execute the function
-//       simulateWork();
-//     })
-//   }, [])
-
-//   return (
-//     <div>
-//       <p>{loading}</p>
-//       <button>wow</button>
-//     </div>
-//   );
-// };
-
-// export default App;
-
-// ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import FileTable from './FileTable';
+import Loader from './Loader';
 import useDragAndDrop from './useDragAndDrop';
+import init, { Protocol, JsNet } from "qwasm";
+import mime from 'mime';
+
 import './App.css';
 
-const branches = {
-	0: {
-		name: "/",
-		items: [
-			{ id: 1, created_at: new Date(), name: "1", ext: null },
-			{ id: 2, created_at: new Date(), name: "2", ext: null },
-			{ id: 3, created_at: new Date(), name: "3", ext: null },
-			{ id: 4, created_at: new Date(), name: "4", ext: "txt" },
-			{ id: 5, created_at: new Date(), name: "5", ext: "jpg" },
-			{ id: 6, created_at: new Date(), name: "6", ext: "zip" },
-			{ id: 7, created_at: new Date(), name: "7", ext: "pdf" },
-			{ id: 8, created_at: new Date(), name: "8", ext: "rar" },
-		],
-		breadcrumbs: [
-		]
-	},
-	1: {
-		name: "1",
-		items: [
-			{ id: 11, created_at: new Date(), name: "11", ext: null },
-			{ id: 12, created_at: new Date(), name: "12", ext: "mov" },
-			{ id: 13, created_at: new Date(), name: "13", ext: "doc" },
-			{ id: 14, created_at: new Date(), name: "14", ext: "mp4" },
-		],
-		breadcrumbs: [
-			{ id: 0, name: "/" }
-		]
-	},
-	11: {
-		name: "11",
-		items: [
-			{ id: 111, created_at: new Date(), name: "111", ext: "pdf" },
-			{ id: 112, created_at: new Date(), name: "112", ext: "txt" },
-		],
-		breadcrumbs: [
-			{ id: 1, name: "1" },
-			{ id: 0, name: "/" }
-		]
-	},
-	2: {
-		name: "2",
-		items: [
-			{ id: 21, created_at: new Date(), name: "21", ext: "pdf" },
-			{ id: 22, created_at: new Date(), name: "22", ext: null },
-		],
-		breadcrumbs: [
-			{ id: 0, name: "/" }
-		]
-	},
-	22: {
-		name: "22",
-		items: [
-			{ id: 221, created_at: new Date(), name: "221", ext: null },
-			{ id: 222, created_at: new Date(), name: "222", ext: null },
-		],
-		breadcrumbs: [
-			{ id: 2, name: "2" },
-			{ id: 0, name: "/" }
-		]
-	},
-	221: {
-		name: "221",
-		items: [
-		],
-		breadcrumbs: [
-			{ id: 22, name: "22" },
-			{ id: 2, name: "2" },
-			{ id: 0, name: "/" }
-		]
-	},
-	222: {
-		name: "222",
-		items: [
-			{ id: 2221, created_at: new Date(), name: "2221", ext: "png" },
-			{ id: 2222, created_at: new Date(), name: "2222", ext: "mp4" },
-			{ id: 2223, created_at: new Date(), name: "2222", ext: "dmg" },
-		],
-		breadcrumbs: [
-			{ id: 22, name: "22" },
-			{ id: 2, name: "2" },
-			{ id: 0, name: "/" }
-		]
-	},
-	3: {
-		name: "3",
-		items: [
-			{ id: 31, created_at: new Date(), name: "31", ext: "docx" },
-			{ id: 32, created_at: new Date(), name: "32", ext: "txt" },
-			{ id: 33, created_at: new Date(), name: "33", ext: null },
-		],
-		breadcrumbs: [
-			{ id: 0, name: "/" }
-		]
-	},
-	33: {
-		name: "33",
-		items: [
-			{ id: 331, created_at: new Date(), name: "331", ext: "docx" },
-			{ id: 332, created_at: new Date(), name: "332", ext: "doc" },
-		],
-		breadcrumbs: [
-			{ id: 3, name: "3" },
-			{ id: 0, name: "/" }
-		]
-	},
-}
-
-export const openDir = (id) => {
-	console.log(`Opening directory: ${id}`);
-	return branches[id];
-};
-
-export const openFile = (id) => {
-	console.log(`Opening file: ${id}`);
-};
-
 let nodeIdx = 1;
+let pass = "god pass";
+let uploads = {};
 
 const App = () => {
-	const [currentDir, setCurrentDir] = useState(branches[0]);
+	const [currentDir, setCurrentDir] = useState(null);
+	const [protocol, setProtocol] = useState(null);
 
-	const handleItemClick = (item) => {
-		if (item.ext === null) {
-			const newDir = openDir(item.id);
-			setCurrentDir(newDir);
-		} else {
-			openFile(item.id);
+	const openDir = async (id) => {
+		console.log(`Opening directory: ${id}`);
+
+		try {
+			setCurrentDir(await protocol.cd_to_dir(id));
+		} catch (e) {
+			console.error("error ls-ing a dir:", e);
 		}
 	};
 
-	const handleBackClick = () => {
-		let dir = branches[currentDir.breadcrumbs[0].id];
-		setCurrentDir(dir);
+	const openFile = async (id) => {
+		console.log(`Opening file: ${id}`);
+
+		// download
+		// decrypt
+		// build
+		// open
+		let ct = uploads[id];
+		let type = mime.getType(currentDir.items().find(file => file.id() === id).ext());
+
+		console.log("ct.len = ", ct.length);
+
+		let pt = await protocol.decrypt_block_for_file(ct, id);
+		const blob = new Blob([pt], { type: type });
+
+		const fileUrl = URL.createObjectURL(blob);
+
+		window.open(fileUrl);
 	};
 
-	const handleBreadcrumbClick = (id) => {
-		setCurrentDir(branches[id]);
+	const handleItemClick = async (item) => {
+		if (item.is_dir()) {
+			await openDir(item.id());
+		} else {
+			await openFile(item.id());
+		}
 	};
 
-	const handleUpload = () => {
+	const handleBackClick = async () => {
+		setCurrentDir(await protocol.go_back());
+	};
+
+	const handleBreadcrumbClick = async (id) => {
+		await openDir(id);
+	};
+
+	const handleUpload = async (event) => {
 		console.log("Upload File Clicked");
+
+		const files = event.target.files;
+		if (files.length > 0) {
+			for (const file of files) {
+				// Handle each file here
+				// You can now call your functions to handle the file
+				// id = touch()
+				// ct = encrypt(content, id)
+				// upload(ct)
+				const ext = mime.getExtension(file.type);
+
+				console.log(`File selected: ${file.name}`);
+				console.log(`Last modified: ${new Date(file.lastModified)}`);
+				console.log(`Size: ${file.size} bytes`);
+				console.log(`Type: ${file.type}`);
+				console.log(`Ext: ${ext}`);
+
+				let pt = new Uint8Array(await file.arrayBuffer());
+				console.log("about to encryot tp.len = ", pt.length);
+
+				let id = await protocol.touch(file.name, ext);
+				let ct = await protocol.encrypt_block_for_file(pt, id);
+
+				console.log("encrypted ct.len = ", ct.length);
+
+				await uploadFile(id, ct);
+			}
+		}
+
+		setCurrentDir(await protocol.ls_cur_mut());
 	};
 
-	const handleFileAdd = () => {
-		nodeIdx += 1;
-		console.log("add file: " + nodeIdx);
+	const uploadFile = async (id, ct) => {
+		// TODO: implement me
+		uploads[id] = ct;
 	};
 
-	const handleDirAdd = () => {
+	const handleDirAdd = async () => {
+		await protocol.mkdir("dir_" + nodeIdx);
+
 		nodeIdx += 1;
-		console.log("add dir: " + nodeIdx);
+
+		setCurrentDir(await protocol.ls_cur_mut());
 	};
 
 	const handleDrop = async (e) => {
@@ -418,18 +143,63 @@ const App = () => {
 
 	const dragActive = useDragAndDrop(handleDrop);
 
+	const fetchSubtree = async () => {
+		// 1 gets a json-serialized array of locked nodes (RESPECT dirty) where parent = parent_id
+		// 2 utf8-encode to a byte array
+		// 3 return
+		// 4' may throw
+
+		// if (!response.ok) {
+		// throw new Error(JSON.stringify({
+		//   message: `HTTP error! status: ${response.status}`,
+		//   status: response.status,
+		//   recentHash: "exampleRecentHash"
+		// }));
+		// }
+
+		const data = [1, 2, 3]
+		const jsonString = JSON.stringify(data);
+
+		// Encode the JSON string to a byte array
+		const encoder = new TextEncoder();
+		const byteArray = encoder.encode(jsonString);
+
+		// Return the byte array
+		return byteArray;
+	};
+
+	const uploadNodes = async (nodes) => {
+		nodes.forEach(function (node) {
+			const encoder = new TextDecoder();
+			const ar = encoder.decode(node);
+			const node_json = JSON.parse(ar);
+
+			console.log("uploaded: " + node_json);
+		});
+	}
+
+	useEffect(async () => {
+		await init();
+		console.log("loaded");
+
+		const net = new JsNet(fetchSubtree, uploadNodes);
+		const god = Protocol.register_as_god(pass, net);
+		const protocol = god.as_protocol();
+
+		setProtocol(protocol);
+		setCurrentDir(await protocol.ls_cur_mut());
+	}, []);
+
 	return (
 		<div className="app">
-			<div className="header"></div>
-			<FileTable
+			{protocol !== null && currentDir !== null ? <FileTable
 				currentDir={currentDir}
 				handleItemClick={handleItemClick}
 				handleBackClick={handleBackClick}
 				handleBreadcrumbClick={handleBreadcrumbClick}
 				handleUpload={handleUpload}
-				handleFileAdd={handleFileAdd}
 				handleDirAdd={handleDirAdd}
-			/>
+			/> : <Loader />}
 			{dragActive && (
 				<div className="drop-zone-overlay">
 					<div className="drop-zone">

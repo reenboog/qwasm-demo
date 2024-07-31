@@ -31,6 +31,7 @@
   display: flex;
   justify-content: flex-end;
   width: 100%;
+  position: relative;
 }
 
 .upload-button {
@@ -43,23 +44,23 @@
   font-weight: 600;
   line-height: 20px;
   cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
-.add-file-button {
-  margin-left: 10px;
-  padding: 5px 12px;
-  background-color: #586069;
-  color: white;
-  border: 1px solid rgba(27, 31, 35, 0.15);
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
+.upload-button + input[type="file"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
   cursor: pointer;
 }
 
 .add-dir-button {
   margin-left: 10px;
+  margin-right: -15px;
   padding: 5px 12px;
   background-color: #f39c12;
   color: white;
@@ -69,6 +70,10 @@
   font-weight: 600;
   line-height: 20px;
   cursor: pointer;
+}
+
+.add-dir-button:hover {
+  background-color: #cc830e;
 }
 
 .upload-button:hover {
@@ -218,4 +223,27 @@
   margin: 0 6px;
   opacity: 0.5;
   color: #586069;
+}
+
+.loader {
+  columns: black;
+}
+
+.file-table-row {
+  position: relative;
+}
+
+.progress-bar-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0.5px;
+  background-color: transparent;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #0366d6;
+  transition: width 0.3s ease;
 }

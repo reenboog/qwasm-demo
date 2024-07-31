@@ -2,7 +2,7 @@ import React from 'react';
 import { FaFileWord, FaFilePdf, FaFileImage, FaFileVideo, FaFileArchive, FaFile, FaFolder } from 'react-icons/fa';
 
 const FileIcon = ({ ext }) => {
-	if (ext === null) {
+	if (ext == undefined || ext == null) {
 		return <FaFolder className="folder-icon" />;
 	}
 	switch (ext) {
