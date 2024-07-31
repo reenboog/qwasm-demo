@@ -223,10 +223,11 @@
 
 // export default App;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-import React, { useState, useEffect } from 'react';
-import { FaFileWord, FaFilePdf, FaFileImage, FaFileVideo, FaFileArchive, FaFile, FaFolder } from 'react-icons/fa';
-import Breadcrumbs from './Breadcrumbs';
+// ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+import React, { useState } from 'react';
+import FileTable from './FileTable';
+import useDragAndDrop from './useDragAndDrop';
 import './App.css';
 
 const branches = {
@@ -338,43 +339,16 @@ const branches = {
 
 export const openDir = (id) => {
 	console.log(`Opening directory: ${id}`);
-	return branches[id]
+	return branches[id];
 };
 
 export const openFile = (id) => {
 	console.log(`Opening file: ${id}`);
 };
 
-const getIcon = (ext) => {
-	if (ext === null) {
-		return <FaFolder className="folder-icon" />;
-	}
-	switch (ext) {
-		case 'doc':
-		case 'docx':
-			return <FaFileWord className="word-icon" />;
-		case 'pdf':
-			return <FaFilePdf className="pdf-icon" />;
-		case 'jpg':
-		case 'jpeg':
-		case 'png':
-			return <FaFileImage className="image-icon" />;
-		case 'mp4':
-		case 'mov':
-			return <FaFileVideo className="video-icon" />;
-		case 'zip':
-		case 'rar':
-			return <FaFileArchive className="archive-icon" />;
-		default:
-			return <FaFile className="file-icon" />;
-	}
-};
-
 let nodeIdx = 1;
 
 const App = () => {
-	const [dragActive, setDragActive] = useState(false);
-	const [dragCounter, setDragCounter] = useState(0);
 	const [currentDir, setCurrentDir] = useState(branches[0]);
 
 	const handleItemClick = (item) => {
@@ -387,9 +361,8 @@ const App = () => {
 	};
 
 	const handleBackClick = () => {
-		let dir = branches[currentDir.breadcrumbs[0].id]
-
-		setCurrentDir(dir)
+		let dir = branches[currentDir.breadcrumbs[0].id];
+		setCurrentDir(dir);
 	};
 
 	const handleBreadcrumbClick = (id) => {
@@ -410,33 +383,7 @@ const App = () => {
 		console.log("add dir: " + nodeIdx);
 	};
 
-	const handleDragEnter = (e) => {
-		e.preventDefault();
-		e.stopPropagation();
-		setDragCounter(prev => prev + 1);
-		setDragActive(true);
-	};
-
-	const handleDragLeave = (e) => {
-		e.preventDefault();
-		e.stopPropagation();
-		setDragCounter(prev => prev - 1);
-		if (dragCounter === 1) {
-			setDragActive(false);
-		}
-	};
-
-	const handleDragOver = (e) => {
-		e.preventDefault();
-		e.stopPropagation();
-	};
-
 	const handleDrop = async (e) => {
-		e.preventDefault();
-		e.stopPropagation();
-		setDragActive(false);
-		setDragCounter(0);
-
 		const droppedItems = e.dataTransfer.items;
 
 		const logNode = async (entry, path = "") => {
@@ -469,63 +416,20 @@ const App = () => {
 		}
 	};
 
-	useEffect(() => {
-		window.addEventListener('dragenter', handleDragEnter);
-		window.addEventListener('dragleave', handleDragLeave);
-		window.addEventListener('dragover', handleDragOver);
-		window.addEventListener('drop', handleDrop);
-
-		return () => {
-			window.removeEventListener('dragenter', handleDragEnter);
-			window.removeEventListener('dragleave', handleDragLeave);
-			window.removeEventListener('dragover', handleDragOver);
-			window.removeEventListener('drop', handleDrop);
-		};
-	}, [dragCounter]);
+	const dragActive = useDragAndDrop(handleDrop);
 
 	return (
 		<div className="app">
-			<div className="header">
-			</div>
-			<div className="table-container">
-				<table className="file-table">
-					<thead>
-						<Breadcrumbs
-							breadcrumbs={currentDir.breadcrumbs}
-							currentDirName={currentDir.name}
-							onBreadcrumbClick={handleBreadcrumbClick}
-							onUploadClick={handleUpload}
-							onFileAddClick={handleFileAdd}
-							onDirAddClick={handleDirAdd}
-						/>
-						<tr>
-							<th className="name-column">Name</th>
-							<th className="created-at-column">Created At</th>
-							<th className="type-column">Type</th>
-						</tr>
-					</thead>
-					<tbody>
-						{currentDir.breadcrumbs.length !== 0 && (
-							<tr key="back" onClick={handleBackClick}>
-								<td colSpan="3">
-									{getIcon(null)}
-									{".."}
-								</td>
-							</tr>
-						)}
-						{currentDir.items.map((item, index) => (
-							<tr key={index} onClick={() => handleItemClick(item)}>
-								<td>
-									{getIcon(item.ext)}
-									{item.name}
-								</td>
-								<td>{item.created_at.toLocaleString()}</td>
-								<td>{item.ext ?? "dir"}</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
+			<div className="header"></div>
+			<FileTable
+				currentDir={currentDir}
+				handleItemClick={handleItemClick}
+				handleBackClick={handleBackClick}
+				handleBreadcrumbClick={handleBreadcrumbClick}
+				handleUpload={handleUpload}
+				handleFileAdd={handleFileAdd}
+				handleDirAdd={handleDirAdd}
+			/>
 			{dragActive && (
 				<div className="drop-zone-overlay">
 					<div className="drop-zone">
