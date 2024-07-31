@@ -45,6 +45,32 @@
   cursor: pointer;
 }
 
+.add-file-button {
+  margin-left: 10px;
+  padding: 5px 12px;
+  background-color: #586069;
+  color: white;
+  border: 1px solid rgba(27, 31, 35, 0.15);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.add-dir-button {
+  margin-left: 10px;
+  padding: 5px 12px;
+  background-color: #f39c12;
+  color: white;
+  border: 1px solid rgba(27, 31, 35, 0.15);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+}
+
 .upload-button:hover {
   background-color: #22863a;
 }
@@ -98,36 +124,43 @@
   cursor: pointer;
 }
 
-.file-icon {
+/* .file-icon {
   margin-right: 10px;
-}
+} */
 
 .folder-icon {
   color: #f39c12;
+  margin-right: 10px;
 }
 
 .word-icon {
   color: #2a5699;
+  margin-right: 10px;
 }
 
 .pdf-icon {
   color: #d73a49;
+  margin-right: 10px;
 }
 
 .image-icon {
   color: #6a737d;
+  margin-right: 10px;
 }
 
 .video-icon {
   color: #2ea043;
+  margin-right: 10px;
 }
 
 .archive-icon {
   color: #f39c12;
+  margin-right: 10px;
 }
 
 .file-icon {
   color: #586069;
+  margin-right: 10px;
 }
 
 .drop-zone-overlay {

@@ -370,6 +370,8 @@ const getIcon = (ext) => {
 	}
 };
 
+let nodeIdx = 1;
+
 const App = () => {
 	const [dragActive, setDragActive] = useState(false);
 	const [dragCounter, setDragCounter] = useState(0);
@@ -396,6 +398,16 @@ const App = () => {
 
 	const handleUpload = () => {
 		console.log("Upload File Clicked");
+	};
+
+	const handleFileAdd = () => {
+		nodeIdx += 1;
+		console.log("add file: " + nodeIdx);
+	};
+
+	const handleDirAdd = () => {
+		nodeIdx += 1;
+		console.log("add dir: " + nodeIdx);
 	};
 
 	const handleDragEnter = (e) => {
@@ -483,6 +495,8 @@ const App = () => {
 							currentDirName={currentDir.name}
 							onBreadcrumbClick={handleBreadcrumbClick}
 							onUploadClick={handleUpload}
+							onFileAddClick={handleFileAdd}
+							onDirAddClick={handleDirAdd}
 						/>
 						<tr>
 							<th className="name-column">Name</th>
@@ -494,7 +508,7 @@ const App = () => {
 						{currentDir.breadcrumbs.length !== 0 && (
 							<tr key="back" onClick={handleBackClick}>
 								<td colSpan="3">
-									<span className="file-icon">{getIcon(null)}</span>
+									{getIcon(null)}
 									{".."}
 								</td>
 							</tr>
@@ -502,7 +516,7 @@ const App = () => {
 						{currentDir.items.map((item, index) => (
 							<tr key={index} onClick={() => handleItemClick(item)}>
 								<td>
-									<span className="file-icon">{getIcon(item.ext)}</span>
+									{getIcon(item.ext)}
 									{item.name}
 								</td>
 								<td>{item.created_at.toLocaleString()}</td>

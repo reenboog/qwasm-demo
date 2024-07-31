@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaChevronRight } from 'react-icons/fa';
 
-const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadClick }) => {
+const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadClick, onFileAddClick, onDirAddClick }) => {
 	return (
 		<tr>
 			<td colSpan="2">
@@ -19,7 +19,9 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadC
 			</td>
 			<td>
 				<div className="upload-button-container">
-					<button className="upload-button" onClick={onUploadClick}>Upload File</button>
+					<button className="upload-button" onClick={onUploadClick}>Upload files</button>
+					<button className="add-dir-button" onClick={onDirAddClick}>Add dir</button>
+					<button className="add-file-button" onClick={onFileAddClick}>Add file</button>
 				</div>
 			</td>
 		</tr>
