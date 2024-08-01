@@ -9,7 +9,8 @@ const FileTable = ({
 	handleBackClick,
 	handleBreadcrumbClick,
 	handleUpload,
-	handleDirAdd
+	handleDirAdd,
+	progress
 }) => (
 	<div className="table-container">
 		<table className="file-table">
@@ -37,7 +38,7 @@ const FileTable = ({
 					</tr>
 				)}
 				{currentDir.items().map((item, index) => (
-					<FileTableRow key={index} item={item} onClick={handleItemClick} />
+					<FileTableRow key={index} item={item} onClick={handleItemClick} progress={progress[item.id()] || 0} />
 				))}
 			</tbody>
 		</table>

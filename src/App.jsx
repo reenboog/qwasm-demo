@@ -14,6 +14,7 @@ let uploads = {};
 const App = () => {
 	const [currentDir, setCurrentDir] = useState(null);
 	const [protocol, setProtocol] = useState(null);
+	const [progress, setProgress] = useState({});
 
 	const openDir = async (id) => {
 		console.log(`Opening directory: ${id}`);
@@ -93,10 +94,10 @@ const App = () => {
 	};
 
 	const uploadFileInRanges = async (id, file) => {
-		const chunkSize = 4 * 1024 * 1024; // 1MB chunk size
+		const chunkSize = 1024 * 1024; // 1MB chunk size
 		const url = "https://quku.live:5050/upload_ranged";
 		let offset = 0;
-		const totalChunks = Math.ceil(file.size / chunkSize);
+		const numChunks = Math.ceil(file.size / chunkSize);
 		let chunkIdx = 0;
 
 		while (offset < file.size) {
@@ -108,7 +109,12 @@ const App = () => {
 			offset += chunkSize;
 			chunkIdx += 1;
 
-			console.log(`${file.name} Uploaded chunk ${offset / chunkSize}/${totalChunks} of file ${file.name}`);
+			setProgress(prev => ({
+				...prev,
+				[id]: (chunkIdx / numChunks) * 100
+			}));
+
+			console.log(`${file.name} Uploaded chunk ${offset / chunkSize}/${numChunks} of file ${file.name}`);
 		}
 
 		console.log(`File upload completed for ${file.name}`);
@@ -305,6 +311,7 @@ const App = () => {
 				handleBreadcrumbClick={handleBreadcrumbClick}
 				handleUpload={handleUpload}
 				handleDirAdd={handleDirAdd}
+				progress={progress}
 			/> : <Loader />}
 			{dragActive && (
 				<div className="drop-zone-overlay">
