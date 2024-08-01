@@ -62,40 +62,146 @@ const App = () => {
 	};
 
 	const handleUpload = async (event) => {
-		console.log("Upload File Clicked");
-
 		const files = event.target.files;
+
 		if (files.length > 0) {
-			for (const file of files) {
-				// Handle each file here
-				// You can now call your functions to handle the file
-				// id = touch()
-				// ct = encrypt(content, id)
-				// upload(ct)
-				const ext = mime.getExtension(file.type);
+			const fileIds = await Promise.all(
+				Array.from(files).map(async (file) => {
+					const ext = mime.getExtension(file.type);
 
-				console.log(`File selected: ${file.name}`);
-				console.log(`Last modified: ${new Date(file.lastModified)}`);
-				console.log(`Size: ${file.size} bytes`);
-				console.log(`Type: ${file.type}`);
-				console.log(`Ext: ${ext}`);
+					console.log(`File selected: ${file.name}`);
+					console.log(`Last modified: ${new Date(file.lastModified)}`);
+					console.log(`Size: ${file.size} bytes`);
+					console.log(`Type: ${file.type}`);
+					console.log(`Ext: ${ext}`);
 
-				let pt = new Uint8Array(await file.arrayBuffer());
-				console.log("about to encryot tp.len = ", pt.length);
+					let pt = new Uint8Array(await file.arrayBuffer());
+					console.log("about to encrypt pt.len = ", pt.length);
 
-				let id = await protocol.touch(file.name, ext);
-				let ct = await protocol.encrypt_block_for_file(pt, id);
+					let id = await protocol.touch(file.name, ext);
+					
+					setCurrentDir(await protocol.ls_cur_mut());
 
-				console.log("encrypted ct.len = ", ct.length);
+					return { id, file };
+				})
+			);
 
-				await uploadFile(id, ct);
-			}
+			await Promise.all(
+				fileIds.map(({ id, file }) => uploadFileInRanges(id, file))
+			);
 		}
-
-		setCurrentDir(await protocol.ls_cur_mut());
 	};
 
-	const uploadFile = async (id, ct) => {
+	const uploadFileInRanges = async (id, file) => {
+		const chunkSize = 4 * 1024 * 1024; // 1MB chunk size
+		const url = "https://quku.live:5050/upload_ranged";
+		let offset = 0;
+		const totalChunks = Math.ceil(file.size / chunkSize);
+		let chunkIdx = 0;
+
+		while (offset < file.size) {
+			const chunk = file.slice(offset, offset + chunkSize);
+			const encryptedChunk = await protocol.chunk_encrypt_for_file(new Uint8Array(await chunk.arrayBuffer()), id, chunkIdx);
+
+			await uploadChunk(encryptedChunk, offset, file.size, url, id);
+
+			offset += chunkSize;
+			chunkIdx += 1;
+
+			console.log(`${file.name} Uploaded chunk ${offset / chunkSize}/${totalChunks} of file ${file.name}`);
+		}
+
+		console.log(`File upload completed for ${file.name}`);
+	};
+
+	const uploadChunk = async (chunk, offset, fileSize, url, id) => {
+		const response = await fetch(`${url}/${id}`, {
+			method: 'POST',
+			headers: {
+				'x-uploader-auth': 'aabb1122', // Replace with your auth token
+				'Content-Range': `bytes ${offset}-${offset + chunk.byteLength - 1}/${fileSize}`,
+				'Content-Type': 'application/octet-stream'
+			},
+			body: chunk
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to upload chunk: ${response.statusText}`);
+		}
+	};
+
+	const uploadFileInStream = async (id, file) => {
+		// const chunkSize = 1024 * 1024; // 1MB chunk size
+		const chunkSize = 16375;
+		const url = "https://quku.live:5050/upload";
+		const fileId = id;
+
+		async function encryptChunk(chunk) {
+			// TODO: implement me
+			return new Uint8Array(chunk);
+		}
+
+		async function readFileChunk(file, offset, chunkSize) {
+			return new Promise((resolve, reject) => {
+				const chunk = file.slice(offset, offset + chunkSize);
+				const reader = new FileReader();
+
+				reader.onload = (e) => resolve(e.target.result);
+				reader.onerror = (e) => reject(e.target.error);
+
+				reader.readAsArrayBuffer(chunk);
+			});
+		}
+
+		const stream = new ReadableStream({
+			start(controller) {
+				let offset = 0;
+
+				const push = async () => {
+					if (offset < file.size) {
+						try {
+							const chunkData = await readFileChunk(file, offset, chunkSize);
+							const encryptedChunk = await encryptChunk(chunkData);
+
+							controller.enqueue(encryptedChunk);
+							offset += chunkSize;
+
+							console.log(`enqueued ${chunkSize}, uploaded ${offset}`)
+
+							push();
+						} catch (error) {
+							console.error(`Error reading or encrypting chunk:`, error);
+							controller.error(error);
+						}
+					} else {
+						controller.close();
+					}
+				};
+
+				push(); // Start reading and processing chunks
+			}
+		});
+
+		try {
+			const response = await fetch(`${url}/${fileId}`, {
+				method: 'POST',
+				headers: {
+					'x-uploader-auth': 'aabb1122', // Replace with your auth token
+				},
+				body: stream,
+				duplex: 'half'  // Required for streaming requests
+			});
+
+			if (!response.ok) {
+				console.error(`Failed to upload file: ${response.statusText}`);
+			}
+		} catch (error) {
+			console.error(`Error uploading file:`, error);
+		}
+
+	};
+
+	const uploadFileInBulk = async (id, ct) => {
 		// TODO: implement me
 		uploads[id] = ct;
 	};
