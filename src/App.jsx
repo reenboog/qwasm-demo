@@ -10,6 +10,7 @@ import './App.css';
 let nodeIdx = 1;
 let pass = "god pass";
 let uploads = {};
+const host = "http://localhost:5050";
 
 const App = () => {
 	const [currentDir, setCurrentDir] = useState(null);
@@ -38,6 +39,8 @@ const App = () => {
 
 		console.log("ct.len = ", ct.length);
 
+		// WARNING: this only reads whole-encrypted files for now; so either supply all the meta info, 
+		// or stick to one method of encryption (bulk or chunked)
 		let pt = await protocol.decrypt_block_for_file(ct, id);
 		const blob = new Blob([pt], { type: type });
 
@@ -66,47 +69,47 @@ const App = () => {
 		const files = event.target.files;
 
 		if (files.length > 0) {
-			const fileIds = await Promise.all(
-				Array.from(files).map(async (file) => {
-					const ext = mime.getExtension(file.type);
+			let fileIds = [];
 
-					console.log(`File selected: ${file.name}`);
-					console.log(`Last modified: ${new Date(file.lastModified)}`);
-					console.log(`Size: ${file.size} bytes`);
-					console.log(`Type: ${file.type}`);
-					console.log(`Ext: ${ext}`);
+			for (const file of files) {
+				const ext = mime.getExtension(file.type);
 
-					let pt = new Uint8Array(await file.arrayBuffer());
-					console.log("about to encrypt pt.len = ", pt.length);
+				console.log(`File selected: ${file.name}`);
+				console.log(`Last modified: ${new Date(file.lastModified)}`);
+				console.log(`Size: ${file.size} bytes`);
+				console.log(`Type: ${file.type}`);
+				console.log(`Ext: ${ext}`);
 
-					let id = await protocol.touch(file.name, ext);
-					
-					setCurrentDir(await protocol.ls_cur_mut());
+				let id = await protocol.touch(file.name, ext);
 
-					return { id, file };
-				})
-			);
+				setCurrentDir(await protocol.ls_cur_mut());
 
+				fileIds.push({id, file});
+			};
+
+			// TODO: make sure concurrent read access to protocol is allowed (so far so good)
 			await Promise.all(
 				fileIds.map(({ id, file }) => uploadFileInRanges(id, file))
+				// fileIds.map(({ id, file }) => uploadFileInBulk(id, file))
+				// fileIds.map(({ id, file }) => uploadFileInStream(id, file))
 			);
 		}
 	};
 
 	const uploadFileInRanges = async (id, file) => {
-		const chunkSize = 1024 * 1024; // 1MB chunk size
-		const url = "https://quku.live:5050/upload_ranged";
-		let offset = 0;
+		const chunkSize = 1024 * 1024;
 		const numChunks = Math.ceil(file.size / chunkSize);
+		let readOffset = 0;
 		let chunkIdx = 0;
 
-		while (offset < file.size) {
-			const chunk = file.slice(offset, offset + chunkSize);
-			const encryptedChunk = await protocol.chunk_encrypt_for_file(new Uint8Array(await chunk.arrayBuffer()), id, chunkIdx);
+		while (readOffset < file.size) {
+			// IMPORTANT: aes gcm is used, so auth tag is appended to the end of each chunk!
+			// therefore, when downloading & decrypting, add aes auth tag (16 bytes) to chunk_size first
+			const chunk = file.slice(readOffset, readOffset + chunkSize);
+			const encrypted = await protocol.chunk_encrypt_for_file(new Uint8Array(await chunk.arrayBuffer()), id, chunkIdx);
 
-			await uploadChunk(encryptedChunk, offset, file.size, url, id);
+			await uploadChunk(encrypted, encrypted.byteLength * chunkIdx, file.size, id);
 
-			offset += chunkSize;
 			chunkIdx += 1;
 
 			setProgress(prev => ({
@@ -114,13 +117,16 @@ const App = () => {
 				[id]: (chunkIdx / numChunks) * 100
 			}));
 
-			console.log(`${file.name} Uploaded chunk ${offset / chunkSize}/${numChunks} of file ${file.name}`);
+			console.log(`${file.name} Uploaded chunk ${readOffset / chunkSize}/${numChunks} of file ${file.name}`);
+			
+			readOffset += chunkSize;
 		}
 
 		console.log(`File upload completed for ${file.name}`);
 	};
 
-	const uploadChunk = async (chunk, offset, fileSize, url, id) => {
+	const uploadChunk = async (chunk, offset, fileSize, id) => {
+		const url = `${host}/uploads/chunk`;
 		const response = await fetch(`${url}/${id}`, {
 			method: 'POST',
 			headers: {
@@ -137,42 +143,33 @@ const App = () => {
 	};
 
 	const uploadFileInStream = async (id, file) => {
-		// const chunkSize = 1024 * 1024; // 1MB chunk size
-		const chunkSize = 16375;
-		const url = "https://quku.live:5050/upload";
+		// WARNING: may not work locally due to `net::ERR_H2_OR_QUIC_REQUIRED`
+		const chunkSize = 10 * 1024 * 1024; // 1MB chunk size
+		const url = `${host}/uploads/stream`;
 		const fileId = id;
-
-		async function encryptChunk(chunk) {
-			// TODO: implement me
-			return new Uint8Array(chunk);
-		}
-
-		async function readFileChunk(file, offset, chunkSize) {
-			return new Promise((resolve, reject) => {
-				const chunk = file.slice(offset, offset + chunkSize);
-				const reader = new FileReader();
-
-				reader.onload = (e) => resolve(e.target.result);
-				reader.onerror = (e) => reject(e.target.error);
-
-				reader.readAsArrayBuffer(chunk);
-			});
-		}
 
 		const stream = new ReadableStream({
 			start(controller) {
-				let offset = 0;
+				let readOffset = 0;
+				let chunkIdx = 0;
 
 				const push = async () => {
-					if (offset < file.size) {
+					if (readOffset < file.size) {
 						try {
-							const chunkData = await readFileChunk(file, offset, chunkSize);
-							const encryptedChunk = await encryptChunk(chunkData);
+							const chunk = await file.slice(readOffset, readOffset + chunkSize).arrayBuffer();
+							const encrypted = await protocol.chunk_encrypt_for_file(new Uint8Array(chunk), id, chunkIdx);
 
-							controller.enqueue(encryptedChunk);
-							offset += chunkSize;
+							controller.enqueue(encrypted);	
+							readOffset += chunkSize;
 
-							console.log(`enqueued ${chunkSize}, uploaded ${offset}`)
+							setProgress(prev => ({
+								...prev,
+								[id]: (readOffset / file.size) * 100
+							}));
+
+							console.log(`enqueued ${chunkSize}, uploaded ${readOffset}`)
+
+							chunkIdx += 1;
 
 							push();
 						} catch (error) {
@@ -192,23 +189,35 @@ const App = () => {
 			const response = await fetch(`${url}/${fileId}`, {
 				method: 'POST',
 				headers: {
-					'x-uploader-auth': 'aabb1122', // Replace with your auth token
+					'x-uploader-auth': 'aabb1122',
 				},
 				body: stream,
-				duplex: 'half'  // Required for streaming requests
+				duplex: 'half'
 			});
 
-			if (!response.ok) {
-				console.error(`Failed to upload file: ${response.statusText}`);
-			}
+			console.log(`response: ${response.statusText}`);
 		} catch (error) {
 			console.error(`Error uploading file:`, error);
 		}
-
 	};
 
-	const uploadFileInBulk = async (id, ct) => {
-		// TODO: implement me
+	const uploadFileInBulk = async (id, file) => {
+		const offset = 0;
+		const data = new Uint8Array(await file.arrayBuffer());
+		const ct = await protocol.encrypt_block_for_file(data, id);
+		const fileSize = ct.byteLength;
+
+		console.log(`Uploading whole file: Start: ${offset}, End: ${fileSize - 1}, Total size: ${fileSize}`);
+
+		await uploadChunk(ct, offset, fileSize, id);
+
+		setProgress(prev => ({
+			...prev,
+			[id]: 100
+		}));
+
+		console.log(`File upload completed for ${file.name}`);
+
 		uploads[id] = ct;
 	};
 
@@ -221,6 +230,7 @@ const App = () => {
 	};
 
 	const handleDrop = async (e) => {
+		// TODO: implement properly
 		const droppedItems = e.dataTransfer.items;
 
 		const logNode = async (entry, path = "") => {
@@ -281,13 +291,31 @@ const App = () => {
 	};
 
 	const uploadNodes = async (nodes) => {
-		nodes.forEach(function (node) {
-			const encoder = new TextDecoder();
-			const ar = encoder.decode(node);
-			const node_json = JSON.parse(ar);
+		const url = `${host}/nodes`;
+		const objs = nodes.map(node => {
+			// TODO: return strings from rust instead
+			const decoder = new TextDecoder();
+			const decoded = decoder.decode(node);
 
-			console.log("uploaded: " + node_json);
+			return JSON.parse(decoded);
 		});
+
+    // Serialize the array of entities into a JSON string
+    const json = JSON.stringify(objs);
+
+		// console.log(`parsed: ${json}`);
+		
+		const response = await fetch(`${url}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: json
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to upload chunk: ${response.statusText}`);
+		}
 	}
 
 	useEffect(async () => {

@@ -20,7 +20,7 @@ const FileTableRow = ({ item, onClick, progress }) => {
 			</td>
 			<td>{new Date(Number(item.created_at())).toLocaleString()}</td>
 			<td>{item.ext() ?? "dir"}</td>
-			<td>
+			<td style={{display:"table-row"}}>
 				{progress < 100 &&
 					<div className="progress-bar-container">
 						<div className="progress-bar" style={{ width: `${progress}%` }}></div>
