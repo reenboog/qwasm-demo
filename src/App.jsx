@@ -7,9 +7,10 @@ import mime from 'mime';
 
 import './App.css';
 
+const chunkSize = 1024 * 1024;
 let nodeIdx = 1;
 let pass = "god pass";
-let uploads = {};
+let cached_files = {};
 const host = "http://localhost:5050";
 
 const App = () => {
@@ -34,13 +35,14 @@ const App = () => {
 		// decrypt
 		// build
 		// open
-		let ct = uploads[id];
+		let ct = cached_files[id];
 		let type = mime.getType(currentDir.items().find(file => file.id() === id).ext());
 
 		console.log("ct.len = ", ct.length);
 
-		// WARNING: this only reads whole-encrypted files for now; so either supply all the meta info, 
+		// WARNING: this only reads whole-encrypted files for now; so either supply all the meta info (including chunk size), 
 		// or stick to one method of encryption (bulk or chunked)
+		// TODO: decrypt in chunks instead
 		let pt = await protocol.decrypt_block_for_file(ct, id);
 		const blob = new Blob([pt], { type: type });
 
@@ -97,27 +99,30 @@ const App = () => {
 	};
 
 	const uploadFileInRanges = async (id, file) => {
-		const chunkSize = 1024 * 1024;
 		const numChunks = Math.ceil(file.size / chunkSize);
 		let readOffset = 0;
 		let chunkIdx = 0;
+		let encryptedOffset = 0;
+		// IMPORTANT: aes gcm is used, so auth tag is appended to the end of each chunk! It makes encrypted
+		// chunks 16 bytes larger than plain text ones; therefore, when downloading & decrypting,
+		// add aes auth tag (16 bytes) to chunk_size first
+		const encryptedFileSize = file.size + numChunks * 16;
 
 		while (readOffset < file.size) {
-			// IMPORTANT: aes gcm is used, so auth tag is appended to the end of each chunk!
-			// therefore, when downloading & decrypting, add aes auth tag (16 bytes) to chunk_size first
 			const chunk = file.slice(readOffset, readOffset + chunkSize);
 			const encrypted = await protocol.chunk_encrypt_for_file(new Uint8Array(await chunk.arrayBuffer()), id, chunkIdx);
 
-			await uploadChunk(encrypted, encrypted.byteLength * chunkIdx, file.size, id);
+			await uploadChunk(encrypted, encryptedOffset, encryptedFileSize, id);
 
+			encryptedOffset += encrypted.byteLength;
 			chunkIdx += 1;
 
 			setProgress(prev => ({
 				...prev,
-				[id]: (chunkIdx / numChunks) * 100
+				[id]: ((chunkIdx + 1) / numChunks) * 100
 			}));
 
-			console.log(`${file.name} Uploaded chunk ${readOffset / chunkSize}/${numChunks} of file ${file.name}`);
+			console.log(`${file.name} Uploaded chunk ${(readOffset / chunkSize) + 1}/${numChunks} of file ${file.name}`);
 			
 			readOffset += chunkSize;
 		}
@@ -144,13 +149,13 @@ const App = () => {
 
 	const uploadFileInStream = async (id, file) => {
 		// WARNING: may not work locally due to `net::ERR_H2_OR_QUIC_REQUIRED`
-		const chunkSize = 10 * 1024 * 1024; // 1MB chunk size
 		const url = `${host}/uploads/stream`;
 		const fileId = id;
+		let readOffset = 0;
+		const fileSize = file.size;
 
 		const stream = new ReadableStream({
 			start(controller) {
-				let readOffset = 0;
 				let chunkIdx = 0;
 
 				const push = async () => {
@@ -164,7 +169,7 @@ const App = () => {
 
 							setProgress(prev => ({
 								...prev,
-								[id]: (readOffset / file.size) * 100
+								[id]: ((readOffset + 1) / fileSize) * 100
 							}));
 
 							console.log(`enqueued ${chunkSize}, uploaded ${readOffset}`)
@@ -190,6 +195,9 @@ const App = () => {
 				method: 'POST',
 				headers: {
 					'x-uploader-auth': 'aabb1122',
+					// TODO: it could be possible to start streaming from a specific offset, hence conten-range
+					// this is sent only for the first chunk, so no need to accumulate encryptedOffset
+					'Content-Range': `bytes ${readOffset}-${readOffset + fileSize - 1}/${fileSize}`,
 				},
 				body: stream,
 				duplex: 'half'
@@ -218,7 +226,7 @@ const App = () => {
 
 		console.log(`File upload completed for ${file.name}`);
 
-		uploads[id] = ct;
+		cached_files[id] = ct;
 	};
 
 	const handleDirAdd = async () => {
