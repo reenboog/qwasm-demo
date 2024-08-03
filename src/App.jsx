@@ -9,6 +9,7 @@ import './App.css';
 
 const chunkSize = 1024 * 1024;
 let nodeIdx = 1;
+let email = "god@world.org";
 let pass = "god pass";
 let cached_files = {};
 const host = "http://localhost:5050";
@@ -298,20 +299,9 @@ const App = () => {
 		return byteArray;
 	};
 
-	const uploadNodes = async (nodes) => {
+	const uploadNodes = async (nodes_json) => {
 		const url = `${host}/nodes`;
-		const objs = nodes.map(node => {
-			// TODO: return strings from rust instead
-			const decoder = new TextDecoder();
-			const decoded = decoder.decode(node);
-
-			return JSON.parse(decoded);
-		});
-
-    // Serialize the array of entities into a JSON string
-    const json = JSON.stringify(objs);
-
-		// console.log(`parsed: ${json}`);
+		const json = new TextDecoder().decode(nodes_json);
 		
 		const response = await fetch(`${url}`, {
 			method: 'POST',
@@ -331,8 +321,51 @@ const App = () => {
 		console.log("loaded");
 
 		const net = new JsNet(fetchSubtree, uploadNodes);
+		
+		//
 		const god = Protocol.register_as_god(pass, net);
+		const serialized = god.json();
 		const protocol = god.as_protocol();
+		const decoded = new TextDecoder().decode(serialized);
+		const signup = `{ "email": "${email}", "pass": "${pass}", "user": ${decoded} }`;
+
+		console.log(signup);
+
+		const response = await fetch(`${host}/signup`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: signup
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to signup: ${response.statusText}`);
+		}	
+
+		// 
+
+		// const login = `{ "email": "${email}", "pass": "${pass}" }`;
+		// const response = await fetch(`${host}/login`, {
+		// 	method: 'POST',
+		// 	headers: {
+		// 		'Content-Type': 'application/json',
+		// 	},
+		// 	body: login
+		// });
+
+		// if (!response.ok) {
+		// 	throw new Error(`Failed to signup: ${response.statusText}`);
+		// }	
+
+		// const body = await response.text();
+		// let json = new TextEncoder().encode(body);
+
+		// console.log(body);
+
+		// const protocol = await Protocol.unlock_with_pass(pass, json, net);
+
+		//
 
 		setProtocol(protocol);
 		setCurrentDir(await protocol.ls_cur_mut());
