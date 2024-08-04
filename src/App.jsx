@@ -289,19 +289,13 @@ const App = () => {
 		// }
 
 		const data = [1, 2, 3]
-		const jsonString = JSON.stringify(data);
+		const json = JSON.stringify(data);
 
-		// Encode the JSON string to a byte array
-		const encoder = new TextEncoder();
-		const byteArray = encoder.encode(jsonString);
-
-		// Return the byte array
-		return byteArray;
+		return json;
 	};
 
-	const uploadNodes = async (nodes_json) => {
+	const uploadNodes = async (json) => {
 		const url = `${host}/nodes`;
-		const json = new TextDecoder().decode(nodes_json);
 		
 		const response = await fetch(`${url}`, {
 			method: 'POST',
@@ -323,47 +317,45 @@ const App = () => {
 		const net = new JsNet(fetchSubtree, uploadNodes);
 		
 		//
-		const god = Protocol.register_as_god(pass, net);
-		const serialized = god.json();
-		const protocol = god.as_protocol();
-		const decoded = new TextDecoder().decode(serialized);
-		const signup = `{ "email": "${email}", "pass": "${pass}", "user": ${decoded} }`;
+		// const god = Protocol.register_as_god(pass, net);
+		// const json = god.json();
+		// const protocol = god.as_protocol();
+		// const signup = `{ "email": "${email}", "pass": "${pass}", "user": ${json} }`;
 
-		console.log(signup);
+		// console.log(signup);
 
-		const response = await fetch(`${host}/signup`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: signup
-		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to signup: ${response.statusText}`);
-		}	
-
-		// 
-
-		// const login = `{ "email": "${email}", "pass": "${pass}" }`;
-		// const response = await fetch(`${host}/login`, {
+		// const response = await fetch(`${host}/signup`, {
 		// 	method: 'POST',
 		// 	headers: {
 		// 		'Content-Type': 'application/json',
 		// 	},
-		// 	body: login
+		// 	body: signup
 		// });
 
 		// if (!response.ok) {
 		// 	throw new Error(`Failed to signup: ${response.statusText}`);
 		// }	
 
-		// const body = await response.text();
-		// let json = new TextEncoder().encode(body);
+		// 
 
-		// console.log(body);
+		const login = `{ "email": "${email}", "pass": "${pass}" }`;
+		const response = await fetch(`${host}/login`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: login
+		});
 
-		// const protocol = await Protocol.unlock_with_pass(pass, json, net);
+		if (!response.ok) {
+			throw new Error(`Failed to signup: ${response.statusText}`);
+		}	
+
+		const json = await response.text();
+
+		console.log(json);
+
+		const protocol = await Protocol.unlock_with_pass(pass, json, net);
 
 		//
 
