@@ -1,7 +1,11 @@
 import React, { useRef } from 'react';
+import { IconButton, TableRow, TableCell, Box, Button, Typography } from '@mui/material';
 import { FaChevronRight } from 'react-icons/fa';
+import UploadFile from '@mui/icons-material/Upload';
+import AddBoxIcon from '@mui/icons-material/AddBox';
+import CreateNewFolder from '@mui/icons-material/CreateNewFolder';
 
-const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadClick, onFileAddClick, onDirAddClick }) => {
+const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadClick, onDirAddClick }) => {
 	const fileInputRef = useRef(null);
 
 	const handleButtonClick = () => {
@@ -9,23 +13,30 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadC
 	};
 
 	return (
-		<tr>
-			<td colSpan="2">
-				<div className="breadcrumbs">
+		<TableRow>
+			<TableCell colSpan={2}>
+				<Box sx={{ display: 'inline-flex', flexWrap: 'wrap' }}>
 					{breadcrumbs.map((breadcrumb, index) => (
-						<span key={breadcrumb.id()} className="breadcrumb-container">
-							<span onClick={() => onBreadcrumbClick(breadcrumb.id())} className="breadcrumb">
+						<Box key={breadcrumb.id()} sx={{ display: 'inline-flex', alignItems: 'center' }}>
+							<Typography
+								onClick={() => onBreadcrumbClick(breadcrumb.id())}
+								className="breadcrumb"
+							>
 								{breadcrumb.name()}
-							</span>
+							</Typography>
 							<FaChevronRight className="breadcrumb-delimiter" />
-						</span>
+						</Box>
 					))}
-					<span className="breadcrumb-current-dir">{currentDirName}</span>
-				</div>
-			</td>
-			<td>
-				<div className="upload-button-container">
-					<button className="upload-button" onClick={handleButtonClick}>Upload files</button>
+					<Typography variant="body1" className="breadcrumb-current-dir">
+						{currentDirName}
+					</Typography>
+				</Box>
+			</TableCell>
+			<TableCell>
+				<Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+					<IconButton onClick={handleButtonClick} >
+						<UploadFile />
+					</IconButton>
 					<input
 						type="file"
 						ref={fileInputRef}
@@ -33,10 +44,12 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadC
 						onChange={onUploadClick}
 						multiple
 					/>
-					<button className="add-dir-button" onClick={onDirAddClick}>Add dir</button>
-				</div>
-			</td>
-		</tr>
+					<IconButton onClick={onDirAddClick}>
+						<CreateNewFolder className="folder-icon" />
+					</IconButton>
+				</Box>
+			</TableCell>
+		</TableRow>
 	);
 };
 

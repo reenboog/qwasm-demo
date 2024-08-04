@@ -1,121 +1,20 @@
-.app {
-  padding: 20px;
-  background-color: #ffffff;
-  color: #24292e;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  min-height: 100vh;
-  position: relative;
-}
-
-.header {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.header h1 {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #24292e;
-}
-
-.header p {
-  font-size: 1rem;
-  margin-bottom: 10px;
-  color: #586069;
-}
-
-.upload-button-container {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-  position: relative;
-}
-
-.upload-button {
-  padding: 5px 12px;
-  background-color: #2ea043;
-  color: white;
-  border: 1px solid rgba(27, 31, 35, 0.15);
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-  cursor: pointer;
-  position: relative;
-  z-index: 1;
-}
-
-.upload-button + input[type="file"] {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.add-dir-button {
-  margin-left: 10px;
-  margin-right: -15px;
-  padding: 5px 12px;
-  background-color: #f39c12;
-  color: white;
-  border: 1px solid rgba(27, 31, 35, 0.15);
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-  cursor: pointer;
-}
-
-.add-dir-button:hover {
-  background-color: #cc830e;
-}
-
-.upload-button:hover {
-  background-color: #22863a;
-}
-
-.table-container {
-  margin-left: auto;
-  width: auto;
-}
-
 .file-table {
   width: 100%;
-  border-collapse: collapse;
 }
 
 .file-table th,
 .file-table td {
-  padding: 8px 16px;
+  padding-left: 16px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-right: 0;
   text-align: left;
   border-bottom: 1px solid #e1e4e8;
   height: 38px;
 }
 
-.file-table th.name-column,
-.file-table td.name-column {
-  width: 40%;
-}
-
-.file-table th.created-at-column,
-.file-table td.created-at-column {
-  width: 30%;
-}
-
-.file-table th.type-column,
-.file-table td.type-column {
-  width: 30%;
-}
-
 .file-table th {
   font-weight: 500;
-  background-color: #f6f8fa;
   color: #24292e;
 }
 
@@ -131,36 +30,33 @@
 
 .folder-icon {
   color: #f39c12;
-  margin-right: 10px;
 }
 
 .word-icon {
   color: #2a5699;
-  margin-right: 10px;
 }
 
 .pdf-icon {
   color: #d73a49;
-  margin-right: 10px;
 }
 
 .image-icon {
-  color: #6a737d;
-  margin-right: 10px;
+  color: #206e2e;
 }
 
 .video-icon {
   color: #2ea043;
-  margin-right: 10px;
 }
 
 .archive-icon {
   color: #f39c12;
-  margin-right: 10px;
 }
 
 .file-icon {
   color: #586069;
+}
+
+.file-icon-container {
   margin-right: 10px;
 }
 
@@ -188,16 +84,6 @@
   color: #0366d6;
 }
 
-.breadcrumbs {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.breadcrumb-container {
-  display: inline-flex;
-  align-items: center;
-}
-
 .breadcrumb {
   cursor: pointer;
   color: #0366d6;
@@ -219,14 +105,6 @@
   margin: 0 6px;
   opacity: 0.5;
   color: #586069;
-}
-
-.loader {
-  columns: black;
-}
-
-.file-table-row {
-  position: relative;
 }
 
 .progress-bar-container {

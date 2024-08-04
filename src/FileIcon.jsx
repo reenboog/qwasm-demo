@@ -1,28 +1,35 @@
 import React from 'react';
-import { FaFileWord, FaFilePdf, FaFileImage, FaFileVideo, FaFileArchive, FaFile, FaFolder } from 'react-icons/fa';
+import FolderIcon from '@mui/icons-material/Folder';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ImageIcon from '@mui/icons-material/Image';
+import MovieIcon from '@mui/icons-material/Movie';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 
 const FileIcon = ({ ext }) => {
 	if (ext == undefined || ext == null) {
-		return <FaFolder className="folder-icon" />;
+		return <FolderIcon className="folder-icon" />;
 	}
 	switch (ext) {
 		case 'doc':
 		case 'docx':
-			return <FaFileWord className="word-icon" />;
+			return <DescriptionIcon className="word-icon" />;
 		case 'pdf':
-			return <FaFilePdf className="pdf-icon" />;
+			return <PictureAsPdfIcon className="pdf-icon" />;
 		case 'jpg':
 		case 'jpeg':
 		case 'png':
-			return <FaFileImage className="image-icon" />;
+			return <ImageIcon className="image-icon" />;
 		case 'mp4':
 		case 'mov':
-			return <FaFileVideo className="video-icon" />;
+			return <MovieIcon className="video-icon" />;
 		case 'zip':
+		case '7z':
 		case 'rar':
-			return <FaFileArchive className="archive-icon" />;
+			return <ArchiveIcon className="archive-icon" />;
 		default:
-			return <FaFile className="file-icon" />;
+			return <InsertDriveFileIcon className="file-icon" />;
 	}
 };
 

@@ -1,6 +1,7 @@
 import React from 'react';
-import FileTableRow from './FileTableRow';
+import { Box, TableContainer, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import Breadcrumbs from './Breadcrumbs';
+import FileTableRow from './FileTableRow';
 import FileIcon from './FileIcon';
 
 const FileTable = ({
@@ -12,9 +13,9 @@ const FileTable = ({
 	handleDirAdd,
 	progress
 }) => (
-	<div className="table-container">
-		<table className="file-table">
-			<thead>
+	<TableContainer >
+		<Table className="file-table">
+			<TableHead>
 				<Breadcrumbs
 					breadcrumbs={currentDir.breadcrumbs()}
 					currentDirName={currentDir.name()}
@@ -22,27 +23,29 @@ const FileTable = ({
 					onUploadClick={handleUpload}
 					onDirAddClick={handleDirAdd}
 				/>
-				<tr>
-					<th className="name-column">Name</th>
-					<th className="created-at-column">Created At</th>
-					<th className="type-column">Type</th>
-				</tr>
-			</thead>
-			<tbody>
+				<TableRow sx={{ backgroundColor: '#f6f8fa' }}>
+					<TableCell sx={{ width: '50%' }}>Name</TableCell>
+					<TableCell sx={{ width: '30%' }}>Created At</TableCell>
+					<TableCell sx={{ width: '20%' }}>Type</TableCell>
+				</TableRow>
+			</TableHead>
+			<TableBody>
 				{currentDir.breadcrumbs().length !== 0 && (
-					<tr key="back" onClick={handleBackClick}>
-						<td colSpan="3">
-							<FileIcon ext={null} />
-							{".."}
-						</td>
-					</tr>
+					<TableRow key="back" onClick={handleBackClick}>
+						<TableCell colSpan={3}>
+							<Box sx={{ display: 'flex', alignItems: 'center' }}>
+								<Box className='file-icon-container' ><FileIcon ext={null} /></Box>
+								{'..'}
+							</Box>
+						</TableCell>
+					</TableRow>
 				)}
 				{currentDir.items().map((item, index) => (
 					<FileTableRow key={index} item={item} onClick={handleItemClick} progress={progress[item.id()] || 0} />
 				))}
-			</tbody>
-		</table>
-	</div>
+			</TableBody>
+		</Table>
+	</TableContainer>
 );
 
 export default FileTable;

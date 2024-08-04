@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { Box, Container } from '@mui/material';
 import FileTable from './FileTable';
-import Loader from './Loader';
 import useDragAndDrop from './useDragAndDrop';
-import init, { Protocol, JsNet } from "qwasm";
+import init, { Protocol, JsNet } from 'qwasm';
 import mime from 'mime';
-
 import './App.css';
 
 const chunkSize = 1024 * 1024;
 let nodeIdx = 1;
-let email = "god@world.org";
-let pass = "god pass";
+let email = 'god@world.org';
+let pass = 'god pass';
 let cached_files = {};
-const host = "http://localhost:5050";
+const host = 'http://localhost:5050';
 
 const App = () => {
 	const [currentDir, setCurrentDir] = useState(null);
@@ -25,7 +24,7 @@ const App = () => {
 		try {
 			setCurrentDir(await protocol.cd_to_dir(id));
 		} catch (e) {
-			console.error("error ls-ing a dir:", e);
+			console.error('error ls-ing a dir:', e);
 		}
 	};
 
@@ -37,9 +36,9 @@ const App = () => {
 		// build
 		// open
 		let ct = cached_files[id];
-		let type = mime.getType(currentDir.items().find(file => file.id() === id).ext());
+		let type = mime.getType(currentDir.items().find((file) => file.id() === id).ext());
 
-		console.log("ct.len = ", ct.length);
+		console.log('ct.len = ', ct.length);
 
 		// WARNING: this only reads whole-encrypted files for now; so either supply all the meta info (including chunk size), 
 		// or stick to one method of encryption (bulk or chunked)
@@ -75,7 +74,7 @@ const App = () => {
 			let fileIds = [];
 
 			for (const file of files) {
-				const ext = mime.getExtension(file.type);
+				const ext = mime.getExtension(file.type) ?? 'file';
 
 				console.log(`File selected: ${file.name}`);
 				console.log(`Last modified: ${new Date(file.lastModified)}`);
@@ -87,15 +86,12 @@ const App = () => {
 
 				setCurrentDir(await protocol.ls_cur_mut());
 
-				fileIds.push({id, file});
-			};
+				fileIds.push({ id, file });
+			}
 
-			// TODO: make sure concurrent read access to protocol is allowed (so far so good)
-			await Promise.all(
-				fileIds.map(({ id, file }) => uploadFileInRanges(id, file))
-				// fileIds.map(({ id, file }) => uploadFileInBulk(id, file))
-				// fileIds.map(({ id, file }) => uploadFileInStream(id, file))
-			);
+			await Promise.all(fileIds.map(({ id, file }) => uploadFileInRanges(id, file)));
+			// fileIds.map(({ id, file }) => uploadFileInBulk(id, file))
+			// fileIds.map(({ id, file }) => uploadFileInStream(id, file))
 		}
 	};
 
@@ -118,13 +114,13 @@ const App = () => {
 			encryptedOffset += encrypted.byteLength;
 			chunkIdx += 1;
 
-			setProgress(prev => ({
+			setProgress((prev) => ({
 				...prev,
 				[id]: ((chunkIdx + 1) / numChunks) * 100
 			}));
 
 			console.log(`${file.name} Uploaded chunk ${(readOffset / chunkSize) + 1}/${numChunks} of file ${file.name}`);
-			
+
 			readOffset += chunkSize;
 		}
 
@@ -165,7 +161,7 @@ const App = () => {
 							const chunk = await file.slice(readOffset, readOffset + chunkSize).arrayBuffer();
 							const encrypted = await protocol.chunk_encrypt_for_file(new Uint8Array(chunk), id, chunkIdx);
 
-							controller.enqueue(encrypted);	
+							controller.enqueue(encrypted);
 							readOffset += chunkSize;
 
 							setProgress(prev => ({
@@ -231,7 +227,7 @@ const App = () => {
 	};
 
 	const handleDirAdd = async () => {
-		await protocol.mkdir("dir_" + nodeIdx);
+		await protocol.mkdir('dir_' + nodeIdx);
 
 		nodeIdx += 1;
 
@@ -242,7 +238,7 @@ const App = () => {
 		// TODO: implement properly
 		const droppedItems = e.dataTransfer.items;
 
-		const logNode = async (entry, path = "") => {
+		const logNode = async (entry, path = '') => {
 			console.log(path + entry.name + (entry.isDirectory ? '/' : ''));
 
 			if (entry.isDirectory) {
@@ -275,11 +271,6 @@ const App = () => {
 	const dragActive = useDragAndDrop(handleDrop);
 
 	const fetchSubtree = async () => {
-		// 1 gets a json-serialized array of locked nodes (RESPECT dirty) where parent = parent_id
-		// 2 utf8-encode to a byte array
-		// 3 return
-		// 4' may throw
-
 		// if (!response.ok) {
 		// throw new Error(JSON.stringify({
 		//   message: `HTTP error! status: ${response.status}`,
@@ -288,7 +279,7 @@ const App = () => {
 		// }));
 		// }
 
-		const data = [1, 2, 3]
+		const data = [1, 2, 3];
 		const json = JSON.stringify(data);
 
 		return json;
@@ -296,11 +287,11 @@ const App = () => {
 
 	const uploadNodes = async (json) => {
 		const url = `${host}/nodes`;
-		
+
 		const response = await fetch(`${url}`, {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json',
+				'Content-Type': 'application/json'
 			},
 			body: json
 		});
@@ -308,54 +299,54 @@ const App = () => {
 		if (!response.ok) {
 			throw new Error(`Failed to upload chunk: ${response.statusText}`);
 		}
-	}
+	};
 
 	useEffect(async () => {
 		await init();
 		console.log("loaded");
 
 		const net = new JsNet(fetchSubtree, uploadNodes);
-		
+
 		//
-		// const god = Protocol.register_as_god(pass, net);
-		// const json = god.json();
-		// const protocol = god.as_protocol();
-		// const signup = `{ "email": "${email}", "pass": "${pass}", "user": ${json} }`;
+		const god = Protocol.register_as_god(pass, net);
+		const json = god.json();
+		const protocol = god.as_protocol();
+		const signup = `{ "email": "${email}", "pass": "${pass}", "user": ${json} }`;
 
-		// console.log(signup);
+		console.log(signup);
 
-		// const response = await fetch(`${host}/signup`, {
+		const response = await fetch(`${host}/signup`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: signup
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to signup: ${response.statusText}`);
+		}
+
+		// 
+
+		// const login = `{ "email": "${email}", "pass": "${pass}" }`;
+		// const response = await fetch(`${host}/login`, {
 		// 	method: 'POST',
 		// 	headers: {
 		// 		'Content-Type': 'application/json',
 		// 	},
-		// 	body: signup
+		// 	body: login
 		// });
 
 		// if (!response.ok) {
 		// 	throw new Error(`Failed to signup: ${response.statusText}`);
 		// }	
 
-		// 
+		// const json = await response.text();
 
-		const login = `{ "email": "${email}", "pass": "${pass}" }`;
-		const response = await fetch(`${host}/login`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: login
-		});
+		// console.log(json);
 
-		if (!response.ok) {
-			throw new Error(`Failed to signup: ${response.statusText}`);
-		}	
-
-		const json = await response.text();
-
-		console.log(json);
-
-		const protocol = await Protocol.unlock_with_pass(pass, json, net);
+		// const protocol = await Protocol.unlock_with_pass(pass, json, net);
 
 		//
 
@@ -364,24 +355,30 @@ const App = () => {
 	}, []);
 
 	return (
-		<div className="app">
-			{protocol !== null && currentDir !== null ? <FileTable
-				currentDir={currentDir}
-				handleItemClick={handleItemClick}
-				handleBackClick={handleBackClick}
-				handleBreadcrumbClick={handleBreadcrumbClick}
-				handleUpload={handleUpload}
-				handleDirAdd={handleDirAdd}
-				progress={progress}
-			/> : <Loader />}
-			{dragActive && (
-				<div className="drop-zone-overlay">
-					<div className="drop-zone">
-						<p>Drop files here</p>
-					</div>
-				</div>
+		<Container sx={{ padding: '20px' }}>
+			{protocol !== null && currentDir !== null ? (
+				<FileTable
+					currentDir={currentDir}
+					handleItemClick={handleItemClick}
+					handleBackClick={handleBackClick}
+					handleBreadcrumbClick={handleBreadcrumbClick}
+					handleUpload={handleUpload}
+					handleDirAdd={handleDirAdd}
+					progress={progress}
+				/>
+			) : (
+				<Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+					loading...
+				</Box>
 			)}
-		</div>
+			{dragActive && (
+				<Box className="drop-zone-overlay">
+					<Box className="drop-zone">
+						<p>Drop files here</p>
+					</Box>
+				</Box>
+			)}
+		</Container>
 	);
 };
 
