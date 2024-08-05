@@ -6,11 +6,12 @@ import FileIcon from './FileIcon';
 
 const FileTable = ({
 	currentDir,
-	handleItemClick,
-	handleBackClick,
-	handleBreadcrumbClick,
-	handleUpload,
-	handleDirAdd,
+	onItemClick,
+	onBackClick,
+	onBreadcrumbClick,
+	onAddUserClick,
+	onUploadClick,
+	onAddDirClick,
 	progress
 }) => (
 	<TableContainer >
@@ -19,9 +20,10 @@ const FileTable = ({
 				<Breadcrumbs
 					breadcrumbs={currentDir.breadcrumbs()}
 					currentDirName={currentDir.name()}
-					onBreadcrumbClick={handleBreadcrumbClick}
-					onUploadClick={handleUpload}
-					onDirAddClick={handleDirAdd}
+					onBreadcrumbClick={onBreadcrumbClick}
+					onAddUserClick={onAddUserClick}
+					onUploadClick={onUploadClick}
+					onAddDirClick={onAddDirClick}
 				/>
 				<TableRow sx={{ backgroundColor: '#f6f8fa' }}>
 					<TableCell sx={{ width: '50%' }}>Name</TableCell>
@@ -31,7 +33,7 @@ const FileTable = ({
 			</TableHead>
 			<TableBody>
 				{currentDir.breadcrumbs().length !== 0 && (
-					<TableRow key="back" onClick={handleBackClick}>
+					<TableRow key="back" onClick={onBackClick}>
 						<TableCell colSpan={3}>
 							<Box sx={{ display: 'flex', alignItems: 'center' }}>
 								<Box className='file-icon-container' ><FileIcon ext={null} /></Box>
@@ -41,7 +43,7 @@ const FileTable = ({
 					</TableRow>
 				)}
 				{currentDir.items().map((item, index) => (
-					<FileTableRow key={index} item={item} onClick={handleItemClick} progress={progress[item.id()] || 0} />
+					<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id()] || 0} />
 				))}
 			</TableBody>
 		</Table>

@@ -2,13 +2,13 @@ import React, { useRef } from 'react';
 import { IconButton, TableRow, TableCell, Box, Button, Typography } from '@mui/material';
 import { FaChevronRight } from 'react-icons/fa';
 import UploadFile from '@mui/icons-material/Upload';
-import AddBoxIcon from '@mui/icons-material/AddBox';
-import CreateNewFolder from '@mui/icons-material/CreateNewFolder';
+import AddDir from '@mui/icons-material/CreateNewFolder';
+import AddUser from '@mui/icons-material/PersonAdd';
 
-const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadClick, onDirAddClick }) => {
+const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUserClick, onUploadClick, onAddDirClick }) => {
 	const fileInputRef = useRef(null);
 
-	const handleButtonClick = () => {
+	const handleUploadFile = () => {
 		fileInputRef.current.click();
 	};
 
@@ -34,7 +34,10 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadC
 			</TableCell>
 			<TableCell>
 				<Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-					<IconButton onClick={handleButtonClick} >
+					<IconButton onClick={onAddUserClick} >
+						<AddUser />
+					</IconButton>
+					<IconButton onClick={handleUploadFile} >
 						<UploadFile />
 					</IconButton>
 					<input
@@ -44,8 +47,8 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onUploadC
 						onChange={onUploadClick}
 						multiple
 					/>
-					<IconButton onClick={onDirAddClick}>
-						<CreateNewFolder className="folder-icon" />
+					<IconButton onClick={onAddDirClick}>
+						<AddDir className="folder-icon" />
 					</IconButton>
 				</Box>
 			</TableCell>

@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Container } from '@mui/material';
-import FileTable from './FileTable';
 import useDragAndDrop from './useDragAndDrop';
 import init, { Protocol, JsNet } from 'qwasm';
+import AuthPage from './AuthPage';
+import FileTable from './FileTable';
 import mime from 'mime';
 import './App.css';
 
 const chunkSize = 1024 * 1024;
 let nodeIdx = 1;
-let email = 'god@world.org';
-let pass = 'god pass';
+// let email = 'god@world.org';
+// let pass = 'god pass';
 let cached_files = {};
 const host = 'http://localhost:5050';
 
@@ -17,6 +18,8 @@ const App = () => {
 	const [currentDir, setCurrentDir] = useState(null);
 	const [protocol, setProtocol] = useState(null);
 	const [progress, setProgress] = useState({});
+	const [authenticated, setAuthenticated] = useState(false);
+	const [net, setNet] = useState(false);
 
 	const openDir = async (id) => {
 		console.log(`Opening directory: ${id}`);
@@ -66,6 +69,10 @@ const App = () => {
 	const handleBreadcrumbClick = async (id) => {
 		await openDir(id);
 	};
+
+	const handleAddUser = async () => {
+		console.log('add user');
+	}
 
 	const handleUpload = async (event) => {
 		const files = event.target.files;
@@ -226,7 +233,7 @@ const App = () => {
 		cached_files[id] = ct;
 	};
 
-	const handleDirAdd = async () => {
+	const handleAddDir = async () => {
 		await protocol.mkdir('dir_' + nodeIdx);
 
 		nodeIdx += 1;
@@ -301,13 +308,19 @@ const App = () => {
 		}
 	};
 
-	useEffect(async () => {
-		await init();
-		console.log("loaded");
+	const handleAuthSuccess = async (json, password) => {
+    const net = new JsNet(fetchSubtree, uploadNodes);
+    const protocol = await Protocol.unlock_with_pass(password, new TextEncoder().encode(json), net);
 
-		const net = new JsNet(fetchSubtree, uploadNodes);
+    setProtocol(protocol);
+    setCurrentDir(await protocol.ls_cur_mut());
+    setAuthenticated(true);
+  };
 
-		//
+	const handleSignup = async (pass, email) => {
+		// should be optional to signup as an admin
+		console.log('signup')
+
 		const god = Protocol.register_as_god(pass, net);
 		const json = god.json();
 		const protocol = god.as_protocol();
@@ -327,58 +340,73 @@ const App = () => {
 			throw new Error(`Failed to signup: ${response.statusText}`);
 		}
 
-		// 
-
-		// const login = `{ "email": "${email}", "pass": "${pass}" }`;
-		// const response = await fetch(`${host}/login`, {
-		// 	method: 'POST',
-		// 	headers: {
-		// 		'Content-Type': 'application/json',
-		// 	},
-		// 	body: login
-		// });
-
-		// if (!response.ok) {
-		// 	throw new Error(`Failed to signup: ${response.statusText}`);
-		// }	
-
-		// const json = await response.text();
-
-		// console.log(json);
-
-		// const protocol = await Protocol.unlock_with_pass(pass, json, net);
-
-		//
-
+		setAuthenticated(true);
 		setProtocol(protocol);
 		setCurrentDir(await protocol.ls_cur_mut());
+	}
+
+	const handleLogin = async (pass, email) => {
+		console.log('login')
+		 const login = `{ "email": "${email}", "pass": "${pass}" }`;
+		const response = await fetch(`${host}/login`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: login
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to signup: ${response.statusText}`);
+		}	
+
+		const json = await response.text();
+
+		console.log(json);
+
+		const protocol = await Protocol.unlock_with_pass(pass, json, net);
+		setAuthenticated(true);
+		setProtocol(protocol);
+		setCurrentDir(await protocol.ls_cur_mut());
+	}
+
+	useEffect(async () => {
+		await init();
+		setNet(new JsNet(fetchSubtree, uploadNodes));
 	}, []);
 
 	return (
 		<Container sx={{ padding: '20px' }}>
-			{protocol !== null && currentDir !== null ? (
-				<FileTable
-					currentDir={currentDir}
-					handleItemClick={handleItemClick}
-					handleBackClick={handleBackClick}
-					handleBreadcrumbClick={handleBreadcrumbClick}
-					handleUpload={handleUpload}
-					handleDirAdd={handleDirAdd}
-					progress={progress}
-				/>
-			) : (
-				<Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-					loading...
-				</Box>
-			)}
-			{dragActive && (
-				<Box className="drop-zone-overlay">
-					<Box className="drop-zone">
-						<p>Drop files here</p>
-					</Box>
-				</Box>
-			)}
-		</Container>
+    {!authenticated ? (
+      <AuthPage onSignupClick={handleSignup} onLoginClick={handleLogin} />
+    ) : (
+      <>
+        {protocol !== null && currentDir !== null ? (
+          <FileTable
+            currentDir={currentDir}
+            onItemClick={handleItemClick}
+            onBackClick={handleBackClick}
+            onBreadcrumbClick={handleBreadcrumbClick}
+						onAddUserClick={handleAddUser}
+            onUploadClick={handleUpload}
+            onAddDirClick={handleAddDir}
+            progress={progress}
+          />
+        ) : (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+            loading...
+          </Box>
+        )}
+        {dragActive && (
+          <Box className="drop-zone-overlay">
+            <Box className="drop-zone">
+              <p>Drop files here</p>
+            </Box>
+          </Box>
+        )}
+      </>
+    )}
+  </Container>	
 	);
 };
 
