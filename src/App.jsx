@@ -70,8 +70,22 @@ const App = () => {
 		await openDir(id);
 	};
 
-	const handleAddUser = async () => {
-		console.log('add user');
+	const handleAddUser = async (email, pin) => {
+		console.log('add user' + email + ' ' + pin);
+
+		let json = protocol.export_all_seeds_to_email(pin, email);
+
+		const response = await fetch(`${host}/invite`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: json
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to invite: ${response.statusText}`);
+		}
 	}
 
 	const handleUpload = async (event) => {
@@ -309,21 +323,34 @@ const App = () => {
 	};
 
 	const handleAuthSuccess = async (json, password) => {
-    const net = new JsNet(fetchSubtree, uploadNodes);
-    const protocol = await Protocol.unlock_with_pass(password, new TextEncoder().encode(json), net);
+		const net = new JsNet(fetchSubtree, uploadNodes);
+		const protocol = await Protocol.unlock_with_pass(password, new TextEncoder().encode(json), net);
 
-    setProtocol(protocol);
-    setCurrentDir(await protocol.ls_cur_mut());
-    setAuthenticated(true);
-  };
+		setProtocol(protocol);
+		setCurrentDir(await protocol.ls_cur_mut());
+		setAuthenticated(true);
+	};
 
-	const handleSignup = async (pass, email) => {
-		// should be optional to signup as an admin
+	const handleSignup = async (pass, email, pin) => {
 		console.log('signup')
 
-		const god = Protocol.register_as_god(pass, net);
-		const json = god.json();
-		const protocol = god.as_protocol();
+		let user;
+
+		if (pin) {
+			const welcome = await fetch(`${host}/invite/${email}`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				}
+			});
+			const json = await welcome.text();
+			user = Protocol.register_as_admin(pass, json, pin, net);
+		} else {
+			user = Protocol.register_as_god(pass, net);
+		}
+
+		const json = user.json();
+		const protocol = user.as_protocol();
 		const signup = `{ "email": "${email}", "pass": "${pass}", "user": ${json} }`;
 
 		console.log(signup);
@@ -347,7 +374,7 @@ const App = () => {
 
 	const handleLogin = async (pass, email) => {
 		console.log('login')
-		 const login = `{ "email": "${email}", "pass": "${pass}" }`;
+		const login = `{ "email": "${email}", "pass": "${pass}" }`;
 		const response = await fetch(`${host}/login`, {
 			method: 'POST',
 			headers: {
@@ -358,7 +385,7 @@ const App = () => {
 
 		if (!response.ok) {
 			throw new Error(`Failed to signup: ${response.statusText}`);
-		}	
+		}
 
 		const json = await response.text();
 
@@ -377,36 +404,36 @@ const App = () => {
 
 	return (
 		<Container sx={{ padding: '20px' }}>
-    {!authenticated ? (
-      <AuthPage onSignupClick={handleSignup} onLoginClick={handleLogin} />
-    ) : (
-      <>
-        {protocol !== null && currentDir !== null ? (
-          <FileTable
-            currentDir={currentDir}
-            onItemClick={handleItemClick}
-            onBackClick={handleBackClick}
-            onBreadcrumbClick={handleBreadcrumbClick}
-						onAddUserClick={handleAddUser}
-            onUploadClick={handleUpload}
-            onAddDirClick={handleAddDir}
-            progress={progress}
-          />
-        ) : (
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-            loading...
-          </Box>
-        )}
-        {dragActive && (
-          <Box className="drop-zone-overlay">
-            <Box className="drop-zone">
-              <p>Drop files here</p>
-            </Box>
-          </Box>
-        )}
-      </>
-    )}
-  </Container>	
+			{!authenticated ? (
+				<AuthPage onSignupClick={handleSignup} onLoginClick={handleLogin} />
+			) : (
+				<>
+					{protocol !== null && currentDir !== null ? (
+						<FileTable
+							currentDir={currentDir}
+							onItemClick={handleItemClick}
+							onBackClick={handleBackClick}
+							onBreadcrumbClick={handleBreadcrumbClick}
+							onAddUserClick={handleAddUser}
+							onUploadClick={handleUpload}
+							onAddDirClick={handleAddDir}
+							progress={progress}
+						/>
+					) : (
+						<Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+							loading...
+						</Box>
+					)}
+					{dragActive && (
+						<Box className="drop-zone-overlay">
+							<Box className="drop-zone">
+								<p>Drop files here</p>
+							</Box>
+						</Box>
+					)}
+				</>
+			)}
+		</Container>
 	);
 };
 

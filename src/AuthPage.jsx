@@ -3,9 +3,10 @@ import { Box, Container, TextField, Button, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 
 const AuthPage = ({ onSignupClick, onLoginClick }) => {
-	const [isSigningUp, setIsSigningUp] = useState(true);
+	const [isSigningUp, setIsSigningUp] = useState(false);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [pin, setPin] = useState('');
 
 	return (
 		<Container sx={{ display: 'flex', justifyContent: 'center', minHeight: '50vh' }}>
@@ -31,9 +32,18 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 					required
 					fullWidth
 				/>
+				{isSigningUp ?
+				<TextField
+					label="Pin"
+					type="text"
+					variant="outlined"
+					value={pin}
+					onChange={(e) => setPin(e.target.value)}
+					fullWidth
+				/> : <></>}
 				{isSigningUp ? (
 					<>
-						<Button variant="contained" color="primary" onClick={() => onSignupClick(email, password)} fullWidth>
+						<Button variant="contained" color="primary" onClick={() => onSignupClick(email, password, pin)} fullWidth>
 							Sign Up
 						</Button>
 						<Button variant="text" onClick={() => setIsSigningUp(false)}>

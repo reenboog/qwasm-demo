@@ -1,11 +1,13 @@
-import React, { useRef } from 'react';
-import { IconButton, TableRow, TableCell, Box, Button, Typography } from '@mui/material';
+import React, { useRef, useState } from 'react';
+import { IconButton, Box, Typography } from '@mui/material';
 import { FaChevronRight } from 'react-icons/fa';
 import UploadFile from '@mui/icons-material/Upload';
 import AddDir from '@mui/icons-material/CreateNewFolder';
 import AddUser from '@mui/icons-material/PersonAdd';
+import InviteByMail from './InviteByEmail';
 
 const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUserClick, onUploadClick, onAddDirClick }) => {
+	const [showInvite, setShowInvite] = useState(false);
 	const fileInputRef = useRef(null);
 
 	const handleUploadFile = () => {
@@ -13,46 +15,51 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUser
 	};
 
 	return (
-		<TableRow>
-			<TableCell colSpan={2}>
-				<Box sx={{ display: 'inline-flex', flexWrap: 'wrap' }}>
-					{breadcrumbs.map((breadcrumb, index) => (
-						<Box key={breadcrumb.id()} sx={{ display: 'inline-flex', alignItems: 'center' }}>
-							<Typography
-								onClick={() => onBreadcrumbClick(breadcrumb.id())}
-								className="breadcrumb"
-							>
-								{breadcrumb.name()}
-							</Typography>
-							<FaChevronRight className="breadcrumb-delimiter" />
-						</Box>
-					))}
-					<Typography variant="body1" className="breadcrumb-current-dir">
-						{currentDirName}
-					</Typography>
-				</Box>
-			</TableCell>
-			<TableCell>
-				<Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-					<IconButton onClick={onAddUserClick} >
-						<AddUser />
-					</IconButton>
-					<IconButton onClick={handleUploadFile} >
-						<UploadFile />
-					</IconButton>
-					<input
-						type="file"
-						ref={fileInputRef}
-						style={{ display: 'none' }}
-						onChange={onUploadClick}
-						multiple
+		<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 1, paddingLeft: '16px', paddingTop: '8px', paddingBottom: '0px', paddingRight: '0px' }}>
+			<Box sx={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center' }}>
+				{breadcrumbs.map((breadcrumb) => (
+					<Box key={breadcrumb.id()} sx={{ display: 'inline-flex', alignItems: 'center' }}>
+						<Typography onClick={() => onBreadcrumbClick(breadcrumb.id())} className="breadcrumb">
+							{breadcrumb.name()}
+						</Typography>
+						<FaChevronRight className="breadcrumb-delimiter" />
+					</Box>
+				))}
+				<Typography variant="body1" className="breadcrumb-current-dir">
+					{currentDirName}
+				</Typography>
+			</Box>
+			<Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+				{showInvite ? (
+					<InviteByMail
+						onCancel={() => setShowInvite(false)}
+						onConfirm={(email, pin) => {
+							onAddUserClick(email, pin);
+							setShowInvite(false);
+						}}
 					/>
-					<IconButton onClick={onAddDirClick}>
-						<AddDir className="folder-icon" />
-					</IconButton>
-				</Box>
-			</TableCell>
-		</TableRow>
+				) : (
+					<>
+						<IconButton onClick={handleUploadFile}>
+							<UploadFile />
+						</IconButton>
+						<input
+							type="file"
+							ref={fileInputRef}
+							style={{ display: 'none' }}
+							onChange={onUploadClick}
+							multiple
+						/>
+						<IconButton onClick={onAddDirClick}>
+							<AddDir className="folder-icon" />
+						</IconButton>
+						<IconButton onClick={() => setShowInvite(true)}>
+							<AddUser sx={{ color: '#0366d6' }} />
+						</IconButton>
+					</>
+				)}
+			</Box>
+		</Box>
 	);
 };
 
