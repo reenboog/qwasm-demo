@@ -322,16 +322,82 @@ const App = () => {
 		}
 	};
 
-	const handleAuthSuccess = async (json, password) => {
-		const net = new JsNet(fetchSubtree, uploadNodes);
-		const protocol = await Protocol.unlock_with_pass(password, new TextEncoder().encode(json), net);
+	const getMk = async (userId) => {
+		const url = `${host}/users/${userId}/mk`;
 
-		setProtocol(protocol);
-		setCurrentDir(await protocol.ls_cur_mut());
-		setAuthenticated(true);
+		console.log("getting mk: " + userId);
+
+		const response = await fetch(`${url}`, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to get mk: ${response.statusText}`);
+		}
+
+		return await response.text();
 	};
 
-	const handleSignup = async (pass, email, pin) => {
+	const getUser = async (userId) => {
+		const url = `${host}/users/${userId}`;
+
+		console.log("getting user: " + userId);
+
+		const response = await fetch(`${url}`, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to get user: ${response.statusText}`);
+		}
+
+		return await response.text();
+	};
+
+	const lockSession = async (tokenId, token) => {
+		const url = `${host}/sessions/lock/${tokenId}`;
+
+		console.log("locking session: " + tokenId);
+
+		const response = await fetch(`${url}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: token
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to lock session: ${response.statusText}`);
+		}
+	};
+
+	const unlockSession = async (tokenId) => {
+		const url = `${host}/sessions/unlock/${tokenId}`;
+
+		console.log("locking session: " + tokenId);
+
+		const response = await fetch(`${url}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to unlock session: ${response.statusText}`);
+		}
+
+		return await response.text();
+	};
+
+	const handleSignup = async (pass, email, pin, rememberMe) => {
 		console.log('signup')
 
 		let user;
@@ -344,6 +410,7 @@ const App = () => {
 				}
 			});
 			const json = await welcome.text();
+
 			user = Protocol.register_as_admin(pass, json, pin, net);
 		} else {
 			user = Protocol.register_as_god(pass, net);
@@ -367,13 +434,18 @@ const App = () => {
 			throw new Error(`Failed to signup: ${response.statusText}`);
 		}
 
+		if (rememberMe) {
+			await protocol.lock_session(pass);
+		}
+
 		setAuthenticated(true);
 		setProtocol(protocol);
 		setCurrentDir(await protocol.ls_cur_mut());
 	}
 
-	const handleLogin = async (pass, email) => {
+	const handleLogin = async (pass, email, rememberMe) => {
 		console.log('login')
+
 		const login = `{ "email": "${email}", "pass": "${pass}" }`;
 		const response = await fetch(`${host}/login`, {
 			method: 'POST',
@@ -389,9 +461,17 @@ const App = () => {
 
 		const json = await response.text();
 
+		console.log('api returned');
 		console.log(json);
-
+		
 		const protocol = await Protocol.unlock_with_pass(pass, json, net);
+
+		if (rememberMe) {
+			console.log('locking session');
+			
+			await protocol.lock_session(pass);
+		}
+		
 		setAuthenticated(true);
 		setProtocol(protocol);
 		setCurrentDir(await protocol.ls_cur_mut());
@@ -399,7 +479,23 @@ const App = () => {
 
 	useEffect(async () => {
 		await init();
-		setNet(new JsNet(fetchSubtree, uploadNodes));
+
+		try {
+			const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession);
+			setNet(network);
+			const protocol = await Protocol.unlock_session_if_any(network);
+
+			setProtocol(protocol);
+			setCurrentDir(await protocol.ls_cur_mut());
+			setAuthenticated(true);
+		} catch (error) {
+			console.log('no session found' + error)
+
+			// FIXME: refactor
+			const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession);
+			setNet(network);
+		}
+
 	}, []);
 
 	return (

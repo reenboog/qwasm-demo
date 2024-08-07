@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Box, Container, TextField, Button, Typography } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
+import { Box, Container, TextField, Button, Typography, FormGroup, FormControlLabel, Checkbox } from '@mui/material';
 
 const AuthPage = ({ onSignupClick, onLoginClick }) => {
 	const [isSigningUp, setIsSigningUp] = useState(false);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [pin, setPin] = useState('');
+	const [rememberMe, setRememberMe] = useState(true);
 
 	return (
 		<Container sx={{ display: 'flex', justifyContent: 'center', minHeight: '50vh' }}>
@@ -32,18 +32,19 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 					required
 					fullWidth
 				/>
-				{isSigningUp ?
-				<TextField
-					label="Pin"
-					type="text"
-					variant="outlined"
-					value={pin}
-					onChange={(e) => setPin(e.target.value)}
-					fullWidth
-				/> : <></>}
+				{isSigningUp &&
+					<TextField
+						label="Pin"
+						type="text"
+						variant="outlined"
+						value={pin}
+						onChange={(e) => setPin(e.target.value)}
+						fullWidth
+					/>
+				}
 				{isSigningUp ? (
 					<>
-						<Button variant="contained" color="primary" onClick={() => onSignupClick(email, password, pin)} fullWidth>
+						<Button variant="contained" color="primary" onClick={() => onSignupClick(email, password, pin, rememberMe)} fullWidth>
 							Sign Up
 						</Button>
 						<Button variant="text" onClick={() => setIsSigningUp(false)}>
@@ -52,7 +53,7 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 					</>
 				) : (
 					<>
-						<Button variant="contained" color="primary" onClick={() => onLoginClick(email, password)} fullWidth>
+						<Button variant="contained" color="primary" onClick={() => onLoginClick(email, password, rememberMe)} fullWidth>
 							Login
 						</Button>
 						<Button variant="text" onClick={() => setIsSigningUp(true)}>
@@ -60,6 +61,17 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 						</Button>
 					</>
 				)}
+				<FormGroup>
+					<FormControlLabel
+						control={
+							<Checkbox
+								checked={rememberMe}
+								onChange={(e) => setRememberMe(e.target.checked)}
+							/>
+						}
+						label="Remember me"
+					/>
+				</FormGroup>
 			</Box>
 		</Container>
 	);
