@@ -14,11 +14,19 @@ let nodeIdx = 1;
 let cached_files = {};
 const host = 'http://localhost:5050';
 
+const State = {
+	Checking: 'CHECKING',
+	Restoring: 'RESTORING',
+	Authenticating: 'AUTHENTICATING',
+	Ready: 'READY',
+	Unauthenticated: 'UNAUTHENTICATED'
+};
+
 const App = () => {
 	const [currentDir, setCurrentDir] = useState(null);
 	const [protocol, setProtocol] = useState(null);
 	const [progress, setProgress] = useState({});
-	const [authenticated, setAuthenticated] = useState(false);
+	const [state, setState] = useState(State.Checking);
 	const [net, setNet] = useState(false);
 
 	const openDir = async (id) => {
@@ -398,6 +406,7 @@ const App = () => {
 	};
 
 	const handleSignup = async (pass, email, pin, rememberMe) => {
+		setState(State.Authenticating);
 		console.log('signup')
 
 		let user;
@@ -431,19 +440,21 @@ const App = () => {
 		});
 
 		if (!response.ok) {
-			throw new Error(`Failed to signup: ${response.statusText}`);
+			console.log('signup error', response.statusText);
+			setState(State.Unauthenticated);
 		}
 
 		if (rememberMe) {
 			await protocol.lock_session(pass);
 		}
 
-		setAuthenticated(true);
+		setState(State.Ready);
 		setProtocol(protocol);
 		setCurrentDir(await protocol.ls_cur_mut());
 	}
 
 	const handleLogin = async (pass, email, rememberMe) => {
+		setState(State.Authenticating);
 		console.log('login')
 
 		const login = `{ "email": "${email}", "pass": "${pass}" }`;
@@ -456,70 +467,84 @@ const App = () => {
 		});
 
 		if (!response.ok) {
-			throw new Error(`Failed to signup: ${response.statusText}`);
+			console.log('login error', response.statusText);
+			setState(State.Unauthenticated);
 		}
 
 		const json = await response.text();
 
 		console.log('api returned');
 		console.log(json);
-		
+
 		const protocol = await Protocol.unlock_with_pass(pass, json, net);
 
 		if (rememberMe) {
 			console.log('locking session');
-			
+
 			await protocol.lock_session(pass);
 		}
-		
-		setAuthenticated(true);
+
+		setState(State.Ready);
 		setProtocol(protocol);
 		setCurrentDir(await protocol.ls_cur_mut());
 	}
 
-	useEffect(async () => {
-		await init();
+	useEffect(() => {
+		const restoreSessionIfAny = async () => {
+			setState(State.Checking);
+			await init();
 
-		try {
-			const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession);
-			setNet(network);
-			const protocol = await Protocol.unlock_session_if_any(network);
+			try {
+				setState(State.Restoring);
+				const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession);
+				setNet(network);
+				const protocol = await Protocol.unlock_session_if_any(network);
 
-			setProtocol(protocol);
-			setCurrentDir(await protocol.ls_cur_mut());
-			setAuthenticated(true);
-		} catch (error) {
-			console.log('no session found' + error)
+				setProtocol(protocol);
+				setCurrentDir(await protocol.ls_cur_mut());
+				setState(State.Ready);
+			} catch (error) {
+				console.log('no session found', error);
 
-			// FIXME: refactor
-			const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession);
-			setNet(network);
-		}
+				const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession);
+				setNet(network);
+				setState(State.Unauthenticated);
+			}
+		};
 
+		restoreSessionIfAny();
 	}, []);
 
 	return (
 		<Container sx={{ padding: '20px' }}>
-			{!authenticated ? (
+			{state === State.Checking && (
+				<></>
+			)}
+			{state === State.Restoring && (
+				<Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+					restoring session...
+				</Box>
+			)}
+			{state === State.Authenticating && (
+				<Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+					authenticating...
+				</Box>
+			)}
+			{state === State.Unauthenticated && (
 				<AuthPage onSignupClick={handleSignup} onLoginClick={handleLogin} />
-			) : (
+			)}
+			{state === State.Ready && protocol !== null && currentDir !== null && (
 				<>
-					{protocol !== null && currentDir !== null ? (
-						<FileTable
-							currentDir={currentDir}
-							onItemClick={handleItemClick}
-							onBackClick={handleBackClick}
-							onBreadcrumbClick={handleBreadcrumbClick}
-							onAddUserClick={handleAddUser}
-							onUploadClick={handleUpload}
-							onAddDirClick={handleAddDir}
-							progress={progress}
-						/>
-					) : (
-						<Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-							loading...
-						</Box>
-					)}
+					<FileTable
+						currentDir={currentDir}
+						onItemClick={handleItemClick}
+						onBackClick={handleBackClick}
+						onBreadcrumbClick={handleBreadcrumbClick}
+						onAddUserClick={handleAddUser}
+						onUploadClick={handleUpload}
+						onAddDirClick={handleAddDir}
+						progress={progress}
+					/>
 					{dragActive && (
 						<Box className="drop-zone-overlay">
 							<Box className="drop-zone">
