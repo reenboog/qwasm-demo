@@ -8,9 +8,8 @@ import Workspace from './Workspace';
 import './App.css';
 
 const chunkSize = 1024 * 1024;
-let nodeIdx = 1;
-// let email = 'god@world.org';
-// let pass = 'god pass';
+// FIXME: remove when dir naming is introduced
+let dirIdx = 1;
 let cached_files = {};
 const host = 'http://localhost:5050';
 
@@ -43,20 +42,22 @@ const App = () => {
 	const openFile = async (id) => {
 		console.log(`Opening file: ${id}`);
 
-		// download
-		// decrypt
-		// build
-		// open
-		let ct = cached_files[id];
+		// if cached open
+		// otherwise start downloading and updating progress
 		let type = mime.getType(currentDir.items().find((file) => file.id() === id).ext());
+		let bytes = cached_files[id];
 
-		console.log('ct.len = ', ct.length);
+		if (!bytes) {
+			console.log('no byyes');
 
-		// WARNING: this only reads whole-encrypted files for now; so either supply all the meta info (including chunk size), 
-		// or stick to one method of encryption (bulk or chunked)
-		// TODO: decrypt in chunks instead
-		let pt = await protocol.decrypt_block_for_file(ct, id);
-		const blob = new Blob([pt], { type: type });
+			// FIXME: implement
+			// let pt = await protocol.decrypt_block_for_file(ct, id);
+			// WARNING: this only reads whole-encrypted files for now; so either supply all the meta info (including chunk size), 
+			// or stick to one method of encryption (bulk or chunked)
+			// TODO: decrypt in chunks instead
+		}
+
+		const blob = new Blob([bytes], { type: type });
 
 		const fileUrl = URL.createObjectURL(blob);
 
@@ -126,6 +127,8 @@ const App = () => {
 				setCurrentDir(await protocol.ls_cur_mut());
 
 				fileIds.push({ id, file });
+				// apply limits, if need be
+				cached_files[id] = new Uint8Array(await file.arrayBuffer());
 			}
 
 			await Promise.all(fileIds.map(({ id, file }) => uploadFileInRanges(id, file)));
@@ -155,10 +158,10 @@ const App = () => {
 
 			setProgress((prev) => ({
 				...prev,
-				[id]: ((chunkIdx + 1) / numChunks) * 100
+				[id]: { val: (chunkIdx / numChunks) * 100, ready: chunkIdx === numChunks }
 			}));
 
-			console.log(`${file.name} Uploaded chunk ${(readOffset / chunkSize) + 1}/${numChunks} of file ${file.name}`);
+			console.log(`${file.name} Uploaded chunk ${chunkIdx} / ${numChunks} of file ${file.name}; ready: ${(chunkIdx === numChunks) }`);
 
 			readOffset += chunkSize;
 		}
@@ -205,7 +208,7 @@ const App = () => {
 
 							setProgress(prev => ({
 								...prev,
-								[id]: ((readOffset + 1) / fileSize) * 100
+								[id]: { val: (readOffset / fileSize) * 100, ready: ( readOffset >= fileSize ) }
 							}));
 
 							console.log(`enqueued ${chunkSize}, uploaded ${readOffset}`)
@@ -257,18 +260,16 @@ const App = () => {
 
 		setProgress(prev => ({
 			...prev,
-			[id]: 100
+			[id]: { val: 100, ready: true }
 		}));
 
 		console.log(`File upload completed for ${file.name}`);
-
-		cached_files[id] = ct;
 	};
 
 	const handleAddDir = async () => {
-		await protocol.mkdir('dir_' + nodeIdx);
+		await protocol.mkdir('dir_' + dirIdx);
 
-		nodeIdx += 1;
+		dirIdx += 1;
 
 		setCurrentDir(await protocol.ls_cur_mut());
 	};
@@ -522,7 +523,10 @@ const App = () => {
 			}
 		};
 
+		// TODO: check pending updates and populate progress
+
 		setProgress({});
+		cached_files = {};
 		
 		restoreSessionIfAny();
 	}, [mountKey]);

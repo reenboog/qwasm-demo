@@ -44,7 +44,7 @@ const FileTable = ({
 						</TableRow>
 					)}
 					{currentDir.items().map((item, index) => (
-						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id()] || 0} />
+						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id()] || { val: 0, ready: true }} />
 					))}
 				</TableBody>
 			</Table>
