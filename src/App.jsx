@@ -28,6 +28,7 @@ const App = () => {
 	const [progress, setProgress] = useState({});
 	const [state, setState] = useState(State.Checking);
 	const [net, setNet] = useState(null);
+	const [mountKey, setMountKey] = useState(0);
 
 	const openDir = async (id) => {
 		console.log(`Opening directory: ${id}`);
@@ -73,15 +74,10 @@ const App = () => {
 	const handleLogoutClick = async () => {
 		console.log('logging off...');
 
-		// FIXME: this is not enough
+		await protocol.logout();
 
-		// await protocol.logout();
-
-		// setState(State.Unauthenticated);
-		// setCurrentDir(null);
-		// setProtocol(null);
-		// setProgress({});
-		// setNet(null);
+		setState(State.Unauthenticated);
+		setMountKey(prevKey => prevKey + 1);
 	};
 
 	const handleBackClick = async () => {
@@ -526,8 +522,10 @@ const App = () => {
 			}
 		};
 
+		setProgress({});
+		
 		restoreSessionIfAny();
-	}, []);
+	}, [mountKey]);
 
 	return (
 		<>
