@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Container } from '@mui/material';
+import { Box } from '@mui/material';
 import useDragAndDrop from './useDragAndDrop';
 import init, { Protocol, JsNet } from 'qwasm';
 import AuthPage from './AuthPage';
-import FileTable from './FileTable';
 import mime from 'mime';
+import Workspace from './Workspace';
 import './App.css';
 
 const chunkSize = 1024 * 1024;
@@ -27,7 +27,7 @@ const App = () => {
 	const [protocol, setProtocol] = useState(null);
 	const [progress, setProgress] = useState({});
 	const [state, setState] = useState(State.Checking);
-	const [net, setNet] = useState(false);
+	const [net, setNet] = useState(null);
 
 	const openDir = async (id) => {
 		console.log(`Opening directory: ${id}`);
@@ -62,12 +62,26 @@ const App = () => {
 		window.open(fileUrl);
 	};
 
-	const handleItemClick = async (item) => {
+	const handleRowClick = async (item) => {
 		if (item.is_dir()) {
 			await openDir(item.id());
 		} else {
 			await openFile(item.id());
 		}
+	};
+
+	const handleLogoutClick = async () => {
+		console.log('logging off...');
+
+		// FIXME: this is not enough
+
+		// await protocol.logout();
+
+		// setState(State.Unauthenticated);
+		// setCurrentDir(null);
+		// setProtocol(null);
+		// setProgress({});
+		// setNet(null);
 	};
 
 	const handleBackClick = async () => {
@@ -516,7 +530,7 @@ const App = () => {
 	}, []);
 
 	return (
-		<Container sx={{ padding: '20px' }}>
+		<>
 			{state === State.Checking && (
 				<></>
 			)}
@@ -534,27 +548,21 @@ const App = () => {
 				<AuthPage onSignupClick={handleSignup} onLoginClick={handleLogin} />
 			)}
 			{state === State.Ready && protocol !== null && currentDir !== null && (
-				<>
-					<FileTable
-						currentDir={currentDir}
-						onItemClick={handleItemClick}
-						onBackClick={handleBackClick}
-						onBreadcrumbClick={handleBreadcrumbClick}
-						onAddUserClick={handleAddUser}
-						onUploadClick={handleUpload}
-						onAddDirClick={handleAddDir}
-						progress={progress}
-					/>
-					{dragActive && (
-						<Box className="drop-zone-overlay">
-							<Box className="drop-zone">
-								<p>Drop files here</p>
-							</Box>
-						</Box>
-					)}
-				</>
+				<Workspace
+					currentDir={currentDir}
+					onItemClick={handleRowClick}
+					onBackClick={handleBackClick}
+					onBreadcrumbClick={handleBreadcrumbClick}
+					onAddUserClick={handleAddUser}
+					onUploadClick={handleUpload}
+					onAddDirClick={handleAddDir}
+					onLogout={handleLogoutClick}
+					progress={progress}
+					dragActive={dragActive}
+					name={null} // you may have a name at this point
+				/>
 			)}
-		</Container>
+		</>
 	);
 };
 
