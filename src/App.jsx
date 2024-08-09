@@ -10,8 +10,6 @@ import './App.css';
 const ptChunkSize = 1024 * 1024;
 const aesAuthTagSize = 16;
 const ctChunkSize = ptChunkSize + aesAuthTagSize;
-// FIXME: remove when dir naming is introduced
-let dirIdx = 1;
 let cached_files = {};
 const host = 'http://localhost:5050';
 
@@ -363,8 +361,6 @@ const App = () => {
 
 	const handleAddDir = async (name) => {
 		await protocol.mkdir(name);
-
-		dirIdx += 1;
 
 		setCurrentDir(await protocol.ls_cur_mut());
 	};
