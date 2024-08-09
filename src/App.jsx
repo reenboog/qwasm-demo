@@ -12,7 +12,7 @@ const ptChunkSize = 1024 * 1024;
 const aesAuthTagSize = 16;
 const ctChunkSize = ptChunkSize + aesAuthTagSize;
 let cached_files = {};
-let cached_thumbs = {}; 
+let cached_thumbs = {};
 const host = 'http://localhost:5050';
 
 const State = {
@@ -58,24 +58,81 @@ const App = () => {
 
 			bytes = await downloadFileInRanges(id, fileSize);
 
-			if (!cached_thumbs[id] && ['image/jpeg', 'image/png', 'image/gif', 'image/avif'].includes(type)) {
+			if (!cached_thumbs[id] && ['image/jpeg', 'image/png', 'image/gif', 'image/avif', 'image/webp'].includes(type)) {
 				const blob = new Blob([bytes], { type: type });
 				const thumb = await genThumb(blob);
 				cached_thumbs[id] = thumb;
-				
+
 				console.log('setting thumb');
 				// does not rerender
 				setThumbs((prev) => ({
 					...prev,
 					[id]: thumb
 				}));
-			}	
+			}
 		}
 
 		const blob = new Blob([bytes], { type: type });
 		const fileUrl = URL.createObjectURL(blob);
 
 		window.open(fileUrl);
+	};
+
+	const processFiles = async (files) => {
+		if (files.length > 0) {
+			let fileIds = [];
+
+			for (const file of files) {
+				const ext = mime.getExtension(file.type) ?? 'file';
+
+				console.log(`File selected: ${file.name}`);
+				console.log(`Last modified: ${new Date(file.lastModified)}`);
+				console.log(`Size: ${file.size} bytes`);
+				console.log(`Type: ${file.type}`);
+				console.log(`Ext: ${ext}`);
+
+				let id = await protocol.touch(file.name, ext);
+
+				if (['jpg', 'jpeg', 'png', 'gif'].includes(ext.toLowerCase())) {
+					const thumb = await genThumb(file);
+					cached_thumbs[id] = thumb;
+
+					setThumbs((prev) => ({
+						...prev,
+						[id]: thumb
+					}));
+				}
+
+				setCurrentDir(await protocol.ls_cur_mut());
+
+				fileIds.push({ id, file });
+			}
+
+			await Promise.all(fileIds.map(({ id, file }) => uploadFileInRanges(id, file)));
+			// fileIds.map(({ id, file }) => uploadFileInBulk(id, file))
+			// fileIds.map(({ id, file }) => uploadFileInStream(id, file))
+		}
+	};
+
+	const handleUpload = async (event) => {
+		const files = event.target.files;
+		await processFiles(files);
+	};
+
+	const handleDrop = async (e) => {
+		e.preventDefault(); // Prevent default behavior (Prevent file from being opened)
+
+		const droppedItems = e.dataTransfer.items;
+		const files = [];
+
+		for (let i = 0; i < droppedItems.length; i++) {
+			const item = droppedItems[i].webkitGetAsEntry();
+			if (item && item.isFile) {
+				files.push(droppedItems[i].getAsFile());
+			}
+		}
+
+		await processFiles(files);
 	};
 
 	const getFileSize = async (id) => {
@@ -130,7 +187,7 @@ const App = () => {
 		}
 
 		return pt.data;
-};
+	};
 
 	const downloadChunk = async (id, start, end) => {
 		const url = `${host}/uploads/chunk/${id}`;
@@ -193,45 +250,6 @@ const App = () => {
 		}
 	}
 
-	const handleUpload = async (event) => {
-		const files = event.target.files;
-
-		if (files.length > 0) {
-			let fileIds = [];
-
-			for (const file of files) {
-				const ext = mime.getExtension(file.type) ?? 'file';
-
-				console.log(`File selected: ${file.name}`);
-				console.log(`Last modified: ${new Date(file.lastModified)}`);
-				console.log(`Size: ${file.size} bytes`);
-				console.log(`Type: ${file.type}`);
-				console.log(`Ext: ${ext}`);
-
-				let id = await protocol.touch(file.name, ext);
-
-				// FIXME: move to a worker thread
-				if (['jpg', 'jpeg', 'png', 'gif'].includes(ext.toLowerCase())) {
-					const thumb = await genThumb(file);
-					cached_thumbs[id] = thumb;
-
-					setThumbs((prev) => ({
-						...prev,
-						[id]: thumb
-					}));
-				}
-
-				setCurrentDir(await protocol.ls_cur_mut());
-
-				fileIds.push({ id, file });
-			}
-
-			await Promise.all(fileIds.map(({ id, file }) => uploadFileInRanges(id, file)));
-			// fileIds.map(({ id, file }) => uploadFileInBulk(id, file))
-			// fileIds.map(({ id, file }) => uploadFileInStream(id, file))
-		}
-	};
-
 	const uploadFileInRanges = async (id, file) => {
 		const numChunks = Math.ceil(file.size / ptChunkSize);
 		let readOffset = 0;
@@ -267,7 +285,7 @@ const App = () => {
 				[id]: { val: (chunkIdx / numChunks) * 100, pending: chunkIdx != numChunks, cached: chunkIdx == numChunks }
 			}));
 
-			console.log(`${file.name} Uploaded chunk ${chunkIdx} / ${numChunks} of file ${file.name}; pending: ${(chunkIdx != numChunks) }`);
+			console.log(`${file.name} Uploaded chunk ${chunkIdx} / ${numChunks} of file ${file.name}; pending: ${(chunkIdx != numChunks)}`);
 
 			readOffset += ptChunkSize;
 		}
@@ -389,40 +407,6 @@ const App = () => {
 		await protocol.mkdir(name);
 
 		setCurrentDir(await protocol.ls_cur_mut());
-	};
-
-	const handleDrop = async (e) => {
-		// FIXME: implement properlyl
-		const droppedItems = e.dataTransfer.items;
-
-		const logNode = async (entry, path = '') => {
-			console.log(path + entry.name + (entry.isDirectory ? '/' : ''));
-
-			if (entry.isDirectory) {
-				const reader = entry.createReader();
-				const readAllEntries = async () => {
-					let entries = [];
-					let readEntries;
-					do {
-						readEntries = await new Promise((resolve) => reader.readEntries(resolve));
-						entries = entries.concat(readEntries);
-					} while (readEntries.length > 0);
-					return entries;
-				};
-
-				const entries = await readAllEntries();
-				for (let i = 0; i < entries.length; i++) {
-					await logNode(entries[i], path + entry.name + '/');
-				}
-			}
-		};
-
-		for (let i = 0; i < droppedItems.length; i++) {
-			const item = droppedItems[i].webkitGetAsEntry();
-			if (item) {
-				await logNode(item);
-			}
-		}
 	};
 
 	const dragActive = useDragAndDrop(handleDrop);
@@ -649,7 +633,7 @@ const App = () => {
 		setThumbs(cached_thumbs);
 		setProgress({});
 		cached_files = {};
-		
+
 		restoreSessionIfAny();
 	}, [mountKey]);
 

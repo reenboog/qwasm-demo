@@ -3,6 +3,7 @@ import { Box, TableContainer, Table, TableHead, TableRow, TableCell, TableBody }
 import Breadcrumbs from './Breadcrumbs';
 import FileTableRow from './FileTableRow';
 import FileIcon from './FileIcon';
+import DropToUpload from './DropToUpload';
 
 const FileTable = ({
 	currentDir,
@@ -13,7 +14,8 @@ const FileTable = ({
 	onUploadClick,
 	handleAddDirClick,
 	progress,
-	thumbs
+	thumbs,
+	dragActive
 }) => (
 	<Box>
 		<Breadcrumbs
@@ -50,6 +52,7 @@ const FileTable = ({
 				</TableBody>
 			</Table>
 		</TableContainer>
+		{dragActive && <DropToUpload />}
 	</Box>
 );
 
