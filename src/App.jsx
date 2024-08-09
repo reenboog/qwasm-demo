@@ -565,7 +565,7 @@ const App = () => {
 		setCurrentDir(await protocol.ls_cur_mut());
 	}
 
-	const handleLogin = async (pass, email, rememberMe) => {
+	const handleLogin = async (email, pass, rememberMe) => {
 		setState(State.Authenticating);
 		console.log('login')
 
