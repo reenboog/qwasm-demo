@@ -12,7 +12,8 @@ const FileTable = ({
 	onAddUserClick,
 	onUploadClick,
 	handleAddDirClick,
-	progress
+	progress,
+	thumbs
 }) => (
 	<Box>
 		<Breadcrumbs
@@ -44,7 +45,7 @@ const FileTable = ({
 						</TableRow>
 					)}
 					{currentDir.items().map((item, index) => (
-						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id()] || { val: 0, pending: false, cached: false }} />
+						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id()] || { val: 0, pending: false, cached: false }} thumb={thumbs[item.id()]} />
 					))}
 				</TableBody>
 			</Table>

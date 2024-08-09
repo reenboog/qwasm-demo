@@ -1,9 +1,9 @@
-import React from 'react';
-import { Box, TableRow, TableCell, LinearProgress } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, TableRow, TableCell } from '@mui/material';
 import FileIcon from './FileIcon';
 import { truncName } from './utils';
 
-const FileTableRow = ({ item, onClick, progress }) => {
+const FileTableRow = ({ item, onClick, progress, thumb }) => {
 	const handleClick = () => {
 		if (!progress.pending || item.is_dir()) {
 			onClick(item);
@@ -17,7 +17,13 @@ const FileTableRow = ({ item, onClick, progress }) => {
 		>
 			<TableCell>
 				<Box sx={{ display: 'flex', alignItems: 'center' }}>
-					<Box className='file-icon-container' ><FileIcon ext={item.ext()} /></Box>
+					<Box className='file-icon-container' sx={{ width: 24, height: 24, marginRight: 1 }}>
+						{thumb ? (
+							<img src={thumb} alt={item.name()} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
+						) : (
+							<FileIcon ext={item.ext()} />
+						)}
+					</Box>
 					{truncName(item.name())}
 				</Box>
 			</TableCell>

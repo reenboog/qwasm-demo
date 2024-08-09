@@ -13,7 +13,7 @@ const Sidebar = ({ name, onSectionChange, onLogout, selectedSection }) => {
 	});
 
 	return (
-		<Box sx={{ width: '80px', height: '100vh', backgroundColor: '#f6f8fa', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0' }}>
+		<Box sx={{ width: '80px', height: '100vh', backgroundColor: '#f6f8fa', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', position: 'fixed' }}>
 			<Avatar sx={{ mb: '40px' }} >{truncName(name, 2)}</Avatar>
 			<Button sx={buttonStyle('files')} onClick={() => onSectionChange('files')}>
 				<FolderIcon />

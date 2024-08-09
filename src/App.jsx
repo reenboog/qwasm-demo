@@ -6,11 +6,13 @@ import AuthPage from './AuthPage';
 import mime from 'mime';
 import Workspace from './Workspace';
 import './App.css';
+import { genThumb } from './utils';
 
 const ptChunkSize = 1024 * 1024;
 const aesAuthTagSize = 16;
 const ctChunkSize = ptChunkSize + aesAuthTagSize;
 let cached_files = {};
+let cached_thumbs = {}; 
 const host = 'http://localhost:5050';
 
 const State = {
@@ -25,6 +27,7 @@ const App = () => {
 	const [currentDir, setCurrentDir] = useState(null);
 	const [protocol, setProtocol] = useState(null);
 	const [progress, setProgress] = useState({});
+	const [thumbs, setThumbs] = useState({});
 	const [state, setState] = useState(State.Checking);
 	const [net, setNet] = useState(null);
 	const [mountKey, setMountKey] = useState(0);
@@ -54,10 +57,22 @@ const App = () => {
 			console.log(`file size = ${fileSize}`);
 
 			bytes = await downloadFileInRanges(id, fileSize);
+
+			if (!cached_thumbs[id] && ['image/jpeg', 'image/png', 'image/gif', 'image/avif'].includes(type)) {
+				const blob = new Blob([bytes], { type: type });
+				const thumb = await genThumb(blob);
+				cached_thumbs[id] = thumb;
+				
+				console.log('setting thumb');
+				// does not rerender
+				setThumbs((prev) => ({
+					...prev,
+					[id]: thumb
+				}));
+			}	
 		}
 
 		const blob = new Blob([bytes], { type: type });
-
 		const fileUrl = URL.createObjectURL(blob);
 
 		window.open(fileUrl);
@@ -194,6 +209,17 @@ const App = () => {
 				console.log(`Ext: ${ext}`);
 
 				let id = await protocol.touch(file.name, ext);
+
+				// FIXME: move to a worker thread
+				if (['jpg', 'jpeg', 'png', 'gif'].includes(ext.toLowerCase())) {
+					const thumb = await genThumb(file);
+					cached_thumbs[id] = thumb;
+
+					setThumbs((prev) => ({
+						...prev,
+						[id]: thumb
+					}));
+				}
 
 				setCurrentDir(await protocol.ls_cur_mut());
 
@@ -366,7 +392,7 @@ const App = () => {
 	};
 
 	const handleDrop = async (e) => {
-		// TODO: implement properly
+		// FIXME: implement properlyl
 		const droppedItems = e.dataTransfer.items;
 
 		const logNode = async (entry, path = '') => {
@@ -570,6 +596,8 @@ const App = () => {
 
 		if (!response.ok) {
 			console.log('login error', response.statusText);
+			// have no fuel to style this, so it is what it is
+			alert('Failed to login');
 			setState(State.Unauthenticated);
 			return;
 		}
@@ -617,6 +645,8 @@ const App = () => {
 
 		// TODO: check pending updates and populate progress
 
+		// FIXME: load thumbs from a local cache
+		setThumbs(cached_thumbs);
 		setProgress({});
 		cached_files = {};
 		
@@ -652,6 +682,7 @@ const App = () => {
 					handleAddDirClick={handleAddDir}
 					onLogout={handleLogoutClick}
 					progress={progress}
+					thumbs={thumbs}
 					dragActive={dragActive}
 					name={null} // you may have a name at this point
 				/>

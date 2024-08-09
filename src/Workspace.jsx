@@ -16,6 +16,7 @@ const Workspace = ({
 	handleAddDirClick,
 	onLogout,
 	progress,
+	thumbs,
 	dragActive,
 	name
 }) => {
@@ -33,6 +34,7 @@ const Workspace = ({
 					onUploadClick={onUploadClick}
 					handleAddDirClick={handleAddDirClick}
 					progress={progress}
+					thumbs={thumbs}
 					dragActive={dragActive}
 				/>;
 			case 'messages':

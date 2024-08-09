@@ -17,4 +17,14 @@ function genPin(length = 4) {
 	return Math.floor(Math.random() * Math.pow(10, length)).toString().padStart(length, '0');
 }
 
-export { validateEmail, truncName, genPin };
+const genThumb = async (file) => {
+	const imageBitmap = await createImageBitmap(file, { resizeWidth: 24, resizeHeight: 24 });
+	const canvas = document.createElement('canvas');
+	canvas.width = 24;
+	canvas.height = 24;
+	const ctx = canvas.getContext('2d');
+	ctx.drawImage(imageBitmap, 0, 0, 24, 24);
+	return canvas.toDataURL('image/png');
+};
+
+export { validateEmail, truncName, genPin, genThumb };
