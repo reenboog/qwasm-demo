@@ -29,7 +29,7 @@ const FileTable = ({
 		<TableContainer>
 			<Table className="file-table">
 				<TableHead>
-					<TableRow sx={{ backgroundColor: '#f6f8fa' }}>
+					<TableRow>
 						<TableCell sx={{ width: '50%' }}>Name</TableCell>
 						<TableCell sx={{ width: '30%' }}>Created At</TableCell>
 						<TableCell sx={{ width: '20%' }}>Type</TableCell>
