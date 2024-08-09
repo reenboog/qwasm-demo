@@ -133,16 +133,16 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 								variant="contained"
 								color="primary"
 								onClick={handleLogin}
-								sx={{ flexGrow: 1, marginLeft: '-12px' }}
+								sx={{ flexGrow: 1, marginLeft: '-12px', marginRight: '-12px' }}
 							>
 								Login
 							</Button>
-							<IconButton
+							{/* <IconButton
 								color="primary"
-								sx={{ width: 30, height: 30, marginRight: '-16px', marginLeft: '10px' }}
+								sx={{ width: 30, height: 30, marginRight: '-16px', marginLeft: '20px' }}
 								onClick={handlePasskey}>
 								<FingerprintIcon sx={{ color: '#586069' }}/>
-							</IconButton>
+							</IconButton> */}
 						</Box>
 						<Button
 							variant="text"

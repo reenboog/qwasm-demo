@@ -361,8 +361,8 @@ const App = () => {
 		console.log(`File upload completed for ${file.name}`);
 	};
 
-	const handleAddDir = async () => {
-		await protocol.mkdir('dir_' + dirIdx);
+	const handleAddDir = async (name) => {
+		await protocol.mkdir(name);
 
 		dirIdx += 1;
 
@@ -652,7 +652,7 @@ const App = () => {
 					onBreadcrumbClick={handleBreadcrumbClick}
 					onAddUserClick={handleAddUser}
 					onUploadClick={handleUpload}
-					onAddDirClick={handleAddDir}
+					handleAddDirClick={handleAddDir}
 					onLogout={handleLogoutClick}
 					progress={progress}
 					dragActive={dragActive}

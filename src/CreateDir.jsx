@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, TextField, IconButton, FormHelperText } from '@mui/material';
+import { Box, TextField, IconButton } from '@mui/material';
 import Cancel from '@mui/icons-material/Cancel';
 import Confirm from '@mui/icons-material/CheckCircle';
-import { validateEmail, genPin } from './utils';
 
-const InviteByMail = ({ onCancel, onConfirm }) => {
-	const [email, setEmail] = useState('');
-	const emailInputRef = useRef(null);
-	const [pin, setPin] = useState(genPin());
+const CreateDir = ({ onCancel, onConfirm }) => {
+	const [dirName, setDirName] = useState('');
+	const dirNameInputRef = useRef(null);
 	const [error, setError] = useState(null);
 	const wrapperRef = useRef(null);
 
-	const handleEmailChange = (e) => {
-		setEmail(e.target.value);
+	const handleDirNameChange = (e) => {
+		setDirName(e.target.value);
 
 		if (e.target.value) {
 			setError(null);
@@ -21,12 +19,8 @@ const InviteByMail = ({ onCancel, onConfirm }) => {
 
 	const handleKeyDown = (event) => {
 		if (event.key === 'Enter') {
-			if (email) {
-				if(validateEmail(email)) {
-					onConfirm(email, pin);
-				} else {
-					setError('A valid email is required.')
-				}
+			if (dirName) {
+				onConfirm(dirName);
 			} else {
 				setError(`Can't be empty.`);
 			}
@@ -44,8 +38,8 @@ const InviteByMail = ({ onCancel, onConfirm }) => {
 	};
 
 	useEffect(() => {
-		if (emailInputRef.current) {
-			emailInputRef.current.focus();
+		if (dirNameInputRef.current) {
+			dirNameInputRef.current.focus();
 		}
 
 		document.addEventListener('mousedown', handleClickOutside);
@@ -57,13 +51,12 @@ const InviteByMail = ({ onCancel, onConfirm }) => {
 	return (
 		<Box ref={wrapperRef} sx={{ display: 'flex', alignItems: 'center', height: '40px', }}>
 			<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop: '-26px' }}>
-				<FormHelperText sx={{ alignSelf: 'flex-end', marginBottom: '-17px' }}>pin: {pin}</FormHelperText>
 				<TextField
-					inputRef={emailInputRef}
-					label={error ?? "Email"}
+					inputRef={dirNameInputRef}
+					label={error ?? "Name"}
 					variant="standard"
-					value={email}
-					onChange={handleEmailChange}
+					value={dirName}
+					onChange={handleDirNameChange}
 					size="small"
 					margin="none"
 					sx={{ marginTop: '0px', width: '300px' }}
@@ -76,11 +69,11 @@ const InviteByMail = ({ onCancel, onConfirm }) => {
 					<Cancel />
 				</IconButton>
 			</Box>
-			<IconButton onClick={() => onConfirm(email, pin)}>
+			<IconButton onClick={() => onConfirm(dirName)}>
 				<Confirm sx={{ color: '#2196F3' }} />
 			</IconButton>
 		</Box>
 	);
 };
 
-export default InviteByMail;
+export default CreateDir;

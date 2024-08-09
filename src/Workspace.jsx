@@ -13,7 +13,7 @@ const Workspace = ({
 	onBreadcrumbClick,
 	onAddUserClick,
 	onUploadClick,
-	onAddDirClick,
+	handleAddDirClick,
 	onLogout,
 	progress,
 	dragActive,
@@ -31,7 +31,7 @@ const Workspace = ({
 					onBreadcrumbClick={onBreadcrumbClick}
 					onAddUserClick={onAddUserClick}
 					onUploadClick={onUploadClick}
-					onAddDirClick={onAddDirClick}
+					handleAddDirClick={handleAddDirClick}
 					progress={progress}
 					dragActive={dragActive}
 				/>;
@@ -48,7 +48,7 @@ const Workspace = ({
 		<Box sx={{ display: 'flex', height: '100vh' }}>
 			<Sidebar onSectionChange={setSection} onLogout={onLogout} name={name} selectedSection={section} />
 			<Box sx={{ flexGrow: 1, marginLeft: '80px', overflow: 'auto' }}>
-				<Container sx={{ padding: '10px' }}>
+				<Container sx={{ padding: '30px' }}>
 					{renderContent()}
 				</Container>
 			</Box>

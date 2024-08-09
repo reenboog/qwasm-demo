@@ -5,9 +5,11 @@ import UploadFile from '@mui/icons-material/Upload';
 import AddDir from '@mui/icons-material/CreateNewFolder';
 import AddUser from '@mui/icons-material/PersonAdd';
 import InviteByMail from './InviteByEmail';
+import CreateDir from './CreateDir';
 
-const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUserClick, onUploadClick, onAddDirClick }) => {
+const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUserClick, onUploadClick, handleAddDirClick }) => {
 	const [showInvite, setShowInvite] = useState(false);
+	const [showCreateDir, setShowCreateDir] = useState(false);
 	const fileInputRef = useRef(null);
 
 	const handleUploadFile = () => {
@@ -38,7 +40,14 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUser
 							setShowInvite(false);
 						}}
 					/>
-				) : (
+				) : showCreateDir ? (<CreateDir
+					onCancel={() => setShowCreateDir(false)}
+					onConfirm={(name) => {
+						console.log('created dir: ' + name);
+						handleAddDirClick(name)
+						setShowCreateDir(false);
+					}}
+				/>) : (
 					<>
 						<IconButton onClick={handleUploadFile}>
 							<UploadFile />
@@ -50,7 +59,7 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUser
 							onChange={onUploadClick}
 							multiple
 						/>
-						<IconButton onClick={onAddDirClick}>
+						<IconButton onClick={() => setShowCreateDir(true)}>
 							<AddDir className="folder-icon" />
 						</IconButton>
 						<IconButton onClick={() => setShowInvite(true)}>

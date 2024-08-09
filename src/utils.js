@@ -13,5 +13,8 @@ const truncName = (name, maxLength = 60) => {
 		: name;
 };
 
+function genPin(length = 4) {
+	return Math.floor(Math.random() * Math.pow(10, length)).toString().padStart(length, '0');
+}
 
-export { validateEmail, truncName };
+export { validateEmail, truncName, genPin };
