@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Container, TextField, Button, Typography, FormGroup, FormControlLabel, Checkbox } from '@mui/material';
+import { Box, Container, TextField, Button, Typography, FormGroup, FormControlLabel, Checkbox, IconButton } from '@mui/material';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import { validateEmail } from './utils';
 
 const AuthPage = ({ onSignupClick, onLoginClick }) => {
@@ -22,7 +23,7 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 				valid = false;
 			}
 		}
-		
+
 		if (!password) {
 			setPasswordError(`Can't be empty`);
 			valid = false;
@@ -64,6 +65,10 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 		if (e.target.value) {
 			setPasswordError('');
 		}
+	};
+
+	const handlePasskey = () => {
+		console.log('pass key tapped');
 	};
 
 	return (
@@ -113,23 +118,41 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 					/>
 				)}
 				{isSigningUp ? (
-					<>
+					<Box>
 						<Button variant="contained" color="primary" onClick={handleSignup} fullWidth>
 							Sign Up
 						</Button>
-						<Button variant="text" onClick={() => setIsSigningUp(false)}>
+						<Button variant="text" onClick={() => setIsSigningUp(false)} sx={{ mt: '26px' }}>
 							Already have an account? Login
 						</Button>
-					</>
+					</Box>
 				) : (
-					<>
-						<Button variant="contained" color="primary" onClick={handleLogin} fullWidth>
-							Login
-						</Button>
-						<Button variant="text" onClick={() => setIsSigningUp(true)}>
+					<Box>
+						<Box display="flex" alignItems="center" gap={0} mb={'16px'}>
+							<Button
+								variant="contained"
+								color="primary"
+								onClick={handleLogin}
+								sx={{ flexGrow: 1, marginLeft: '-12px' }}
+							>
+								Login
+							</Button>
+							<IconButton
+								color="primary"
+								sx={{ width: 30, height: 30, marginRight: '-16px', marginLeft: '10px' }}
+								onClick={handlePasskey}>
+								<FingerprintIcon sx={{ color: '#586069' }}/>
+							</IconButton>
+						</Box>
+						<Button
+							variant="text"
+							onClick={() => setIsSigningUp(true)}
+							fullWidth
+							sx={{ mt: '10px' }}
+						>
 							Don't have an account? Sign Up
 						</Button>
-					</>
+					</Box>
 				)}
 				<FormGroup>
 					<FormControlLabel
