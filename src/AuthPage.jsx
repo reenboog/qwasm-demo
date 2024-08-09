@@ -7,32 +7,90 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 	const [password, setPassword] = useState('');
 	const [pin, setPin] = useState('');
 	const [rememberMe, setRememberMe] = useState(true);
+	const [emailError, setEmailError] = useState('');
+	const [passwordError, setPasswordError] = useState('');
+
+	const handleSignup = () => {
+		let valid = true;
+		if (!email) {
+			setEmailError('Login is required.');
+			valid = false;
+		}
+		if (!password) {
+			setPasswordError('Password is required.');
+			valid = false;
+		}
+		if (valid) {
+			onSignupClick(email, password, pin, rememberMe);
+		}
+	};
+
+	const handleLogin = () => {
+		let valid = true;
+		if (!email) {
+			setEmailError('Login is required.');
+			valid = false;
+		}
+		if (!password) {
+			setPasswordError('Password is required.');
+			valid = false;
+		}
+		if (valid) {
+			onLoginClick(email, password, rememberMe);
+		}
+	};
+
+	const handleEmailChange = (e) => {
+		setEmail(e.target.value);
+		if (e.target.value) {
+			setEmailError('');
+		}
+	};
+
+	const handlePasswordChange = (e) => {
+		setPassword(e.target.value);
+		if (e.target.value) {
+			setPasswordError('');
+		}
+	};
 
 	return (
-		<Container sx={{ display: 'flex', justifyContent: 'center', minHeight: '50vh' }}>
+		<Container
+			sx={{
+				mt: '-50px',
+				display: 'flex',
+				justifyContent: 'center',
+				alignItems: 'center',
+				minHeight: '100vh',
+			}}
+		>
 			<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginTop: 4, width: '300px', margin: 'auto' }}>
 				<Typography variant="h5" component="h1">
 					{isSigningUp ? 'Sign Up' : 'Login'}
 				</Typography>
 				<TextField
-					label="Email"
+					label="Login"
 					type="email"
 					variant="outlined"
 					value={email}
-					onChange={(e) => setEmail(e.target.value)}
+					onChange={handleEmailChange}
 					required
 					fullWidth
+					error={!!emailError}
+					helperText={emailError}
 				/>
 				<TextField
 					label="Password"
 					type="password"
 					variant="outlined"
 					value={password}
-					onChange={(e) => setPassword(e.target.value)}
+					onChange={handlePasswordChange}
 					required
 					fullWidth
+					error={!!passwordError}
+					helperText={passwordError}
 				/>
-				{isSigningUp &&
+				{isSigningUp && (
 					<TextField
 						label="Pin"
 						type="text"
@@ -41,10 +99,10 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 						onChange={(e) => setPin(e.target.value)}
 						fullWidth
 					/>
-				}
+				)}
 				{isSigningUp ? (
 					<>
-						<Button variant="contained" color="primary" onClick={() => onSignupClick(email, password, pin, rememberMe)} fullWidth>
+						<Button variant="contained" color="primary" onClick={handleSignup} fullWidth>
 							Sign Up
 						</Button>
 						<Button variant="text" onClick={() => setIsSigningUp(false)}>
@@ -53,7 +111,7 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 					</>
 				) : (
 					<>
-						<Button variant="contained" color="primary" onClick={() => onLoginClick(email, password, rememberMe)} fullWidth>
+						<Button variant="contained" color="primary" onClick={handleLogin} fullWidth>
 							Login
 						</Button>
 						<Button variant="text" onClick={() => setIsSigningUp(true)}>
