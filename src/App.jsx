@@ -517,7 +517,7 @@ const App = () => {
 		return await response.text();
 	};
 
-	const handleSignup = async (pass, email, pin, rememberMe) => {
+	const handleSignup = async (email, pass, pin, rememberMe) => {
 		setState(State.Authenticating);
 		console.log('signup')
 
