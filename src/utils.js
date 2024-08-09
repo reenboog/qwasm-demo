@@ -1,3 +1,4 @@
+
 function validateEmail(email) {
 	const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -17,14 +18,24 @@ function genPin(length = 4) {
 	return Math.floor(Math.random() * Math.pow(10, length)).toString().padStart(length, '0');
 }
 
-const genThumb = async (file) => {
-	const imageBitmap = await createImageBitmap(file, { resizeWidth: 24, resizeHeight: 24 });
-	const canvas = document.createElement('canvas');
-	canvas.width = 24;
-	canvas.height = 24;
-	const ctx = canvas.getContext('2d');
-	ctx.drawImage(imageBitmap, 0, 0, 24, 24);
-	return canvas.toDataURL('image/png');
+const genThumb = (file) => {
+	return new Promise((resolve, reject) => {
+		// if used often, should be preserved for reuse
+		const worker = new Worker(new URL('./worker.js', import.meta.url));
+		const handleWorkerMessage = function (event) {
+			if (event.data.type === 'thumb_ready') {
+				resolve(URL.createObjectURL(event.data.payload));
+				worker.removeEventListener('message', handleWorkerMessage); // Clean up event listener
+			}
+		};
+
+		worker.addEventListener('message', handleWorkerMessage);
+		worker.onerror = function (error) {
+			reject(error);
+		};
+
+		worker.postMessage({ type: 'gen_thumb', payload: file });
+	});
 };
 
 export { validateEmail, truncName, genPin, genThumb };

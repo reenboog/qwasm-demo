@@ -1,48 +1,23 @@
+
 // src/worker.js
 /* eslint-disable no-restricted-globals */
 
-// import init, { Protocol } from "qwasm";
+self.onmessage = async function (event) {
+	const { type, payload } = event.data;
 
-// let wasmInitialized = false;
-
-// function setWasmInitialized() {
-//   wasmInitialized = true;
-// }
-
-// const initializeWasm = async () => {
-//   await init();
-//   wasmInitialized = true;
-// };
-
-// initializeWasm();
-
-// self.onmessage = async (e) => {
-//   if (!wasmInitialized) {
-//     await initializeWasm();
-//   }
-
-//   const { type, payload } = e.data;
-//   let result;
-
-//   try {
-//     switch (type) {
-//       case 'encrypt_block_for_file':
-//         // wont' work, since protocol would be to instantiate/deserialize here instead
-//         result = payload.protocol.encrypt_block_for_file(payload.data, payload.fileId);
-//         break;
-//       case 'decrypt_block_for_file':
-//         result = payload.protocol.decrypt_block_for_file(payload.data, payload.fileId);
-//         break;
-//       default:
-//         result = 'Unknown type';
-//     }
-//   } catch (error) {
-//     result = `Error: ${error.message || error}`;
-//   } 
-
-//   self.postMessage({ type, result });
-// };
-
-// export { setWasmInitialized };
+	switch (type) {
+		case 'gen_thumb':
+			const file = payload;
+			const imageBitmap = await createImageBitmap(file, { resizeWidth: 24, resizeHeight: 24 });
+			const canvas = new OffscreenCanvas(24, 24);
+			const ctx = canvas.getContext('2d');
+			ctx.drawImage(imageBitmap, 0, 0, 24, 24);
+			const thumbnail = await canvas.convertToBlob({ type: 'image/png' });
+			self.postMessage({ type: 'thumb_ready', payload: thumbnail });
+			break;
+		default:
+			console.error('Unknown message type:', type);
+	}
+};
 
 /* eslint-enable no-restricted-globals */
