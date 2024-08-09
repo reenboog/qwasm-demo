@@ -17,7 +17,7 @@ const FileTableRow = ({ item, onClick, progress, thumb }) => {
 		>
 			<TableCell>
 				<Box sx={{ display: 'flex', alignItems: 'center' }}>
-					<Box className='file-icon-container' sx={{ width: 24, height: 24, marginRight: 1 }}>
+					<Box className='file-icon-container' >
 						{thumb ? (
 							<img src={thumb} alt={item.name()} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
 						) : (
