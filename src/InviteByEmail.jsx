@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, TextField, IconButton, FormHelperText } from '@mui/material';
 import Cancel from '@mui/icons-material/Cancel';
 import Confirm from '@mui/icons-material/CheckCircle';
+import { validateEmail } from './utils';
 
 function genPin(length = 4) {
 	return Math.floor(Math.random() * Math.pow(10, length)).toString().padStart(length, '0');
@@ -11,11 +12,28 @@ const InviteByMail = ({ onCancel, onConfirm }) => {
 	const [email, setEmail] = useState('');
 	const emailInputRef = useRef(null);
 	const [pin, setPin] = useState(genPin());
+	const [error, setError] = useState(null);
 	const wrapperRef = useRef(null);
+
+	const handleEmailChange = (e) => {
+		setEmail(e.target.value);
+
+		if (e.target.value) {
+			setError(null);
+		}
+	};
 
 	const handleKeyDown = (event) => {
 		if (event.key === 'Enter') {
-			onConfirm(email, pin);
+			if (email) {
+				if(validateEmail(email)) {
+					onConfirm(email, pin);
+				} else {
+					setError('A valid email is required.')
+				}
+			} else {
+				setError(`Can't be empty.`);
+			}
 		}
 
 		if (event.key === 'Escape') {
@@ -46,14 +64,15 @@ const InviteByMail = ({ onCancel, onConfirm }) => {
 				<FormHelperText sx={{ alignSelf: 'flex-end', marginBottom: '-17px' }}>pin: {pin}</FormHelperText>
 				<TextField
 					inputRef={emailInputRef}
-					label="Email"
+					label={error ?? "Email"}
 					variant="standard"
 					value={email}
-					onChange={(e) => setEmail(e.target.value)}
+					onChange={handleEmailChange}
 					size="small"
 					margin="none"
 					sx={{ marginTop: '0px', width: '300px' }}
 					onKeyDown={handleKeyDown}
+					error={!!error}
 				/>
 			</Box>
 			<Box sx={{ alignItems: 'center', marginRight: '-8px' }}>

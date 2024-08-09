@@ -4,10 +4,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ForumIcon from '@mui/icons-material/Forum';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
-
-function truncName(name) {
-	return name ? name.slice(0, 2) : null;
-}
+import { truncName } from './utils';
 
 const Sidebar = ({ name, onSectionChange, onLogout, selectedSection }) => {
 	const buttonStyle = (section) => ({
@@ -17,7 +14,7 @@ const Sidebar = ({ name, onSectionChange, onLogout, selectedSection }) => {
 
 	return (
 		<Box sx={{ width: '80px', height: '100vh', backgroundColor: '#f6f8fa', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0' }}>
-			<Avatar sx={{ mb: '40px' }} >{truncName(name)}</Avatar>
+			<Avatar sx={{ mb: '40px' }} >{truncName(name, 2)}</Avatar>
 			<Button sx={buttonStyle('files')} onClick={() => onSectionChange('files')}>
 				<FolderIcon />
 			</Button>

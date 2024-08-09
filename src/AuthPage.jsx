@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Container, TextField, Button, Typography, FormGroup, FormControlLabel, Checkbox } from '@mui/material';
+import { validateEmail } from './utils';
 
 const AuthPage = ({ onSignupClick, onLoginClick }) => {
 	const [isSigningUp, setIsSigningUp] = useState(false);
@@ -13,11 +14,17 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 	const handleSignup = () => {
 		let valid = true;
 		if (!email) {
-			setEmailError('Login is required.');
+			setEmailError(`Can't be empty`);
 			valid = false;
+		} else {
+			if (!validateEmail(email)) {
+				setEmailError('A valid email is required');
+				valid = false;
+			}
 		}
+		
 		if (!password) {
-			setPasswordError('Password is required.');
+			setPasswordError(`Can't be empty`);
 			valid = false;
 		}
 		if (valid) {
@@ -28,11 +35,16 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 	const handleLogin = () => {
 		let valid = true;
 		if (!email) {
-			setEmailError('Login is required.');
+			setEmailError(`Can't be empty`);
 			valid = false;
+		} else {
+			if (!validateEmail(email)) {
+				setEmailError('A valid email is required');
+				valid = false;
+			}
 		}
 		if (!password) {
-			setPasswordError('Password is required.');
+			setPasswordError(`Can't be empty`);
 			valid = false;
 		}
 		if (valid) {
@@ -69,7 +81,7 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 					{isSigningUp ? 'Sign Up' : 'Login'}
 				</Typography>
 				<TextField
-					label="Login"
+					label="Email"
 					type="email"
 					variant="outlined"
 					value={email}

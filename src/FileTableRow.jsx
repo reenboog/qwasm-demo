@@ -1,13 +1,7 @@
 import React from 'react';
 import { Box, TableRow, TableCell, LinearProgress } from '@mui/material';
 import FileIcon from './FileIcon';
-
-const truncFileName = (fileName, maxLength = 100) => {
-	if (fileName.length > maxLength) {
-		return fileName.substring(0, maxLength - 3) + '...';
-	}
-	return fileName;
-};
+import { truncName } from './utils';
 
 const FileTableRow = ({ item, onClick, progress }) => {
 	const handleClick = () => {
@@ -24,7 +18,7 @@ const FileTableRow = ({ item, onClick, progress }) => {
 			<TableCell>
 				<Box sx={{ display: 'flex', alignItems: 'center' }}>
 					<Box className='file-icon-container' ><FileIcon ext={item.ext()} /></Box>
-					{truncFileName(item.name())}
+					{truncName(item.name())}
 				</Box>
 			</TableCell>
 			<TableCell>{new Date(Number(item.created_at())).toLocaleString()}</TableCell>
