@@ -20,6 +20,9 @@ const FileIcon = ({ ext }) => {
 		case 'jpg':
 		case 'jpeg':
 		case 'png':
+		case 'gif':
+		case 'webp':
+		case 'avif':
 			return <ImageIcon className="image-icon" />;
 		case 'mp4':
 		case 'mov':

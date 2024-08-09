@@ -93,7 +93,7 @@ const App = () => {
 
 				let id = await protocol.touch(file.name, ext);
 
-				if (['jpg', 'jpeg', 'png', 'gif'].includes(ext.toLowerCase())) {
+				if (['jpg', 'jpeg', 'png', 'gif', 'avif', 'webp'].includes(ext.toLowerCase())) {
 					const thumb = await genThumb(file);
 					cached_thumbs[id] = thumb;
 
