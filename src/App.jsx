@@ -575,6 +575,7 @@ const App = () => {
 		if (!response.ok) {
 			console.log('login error', response.statusText);
 			setState(State.Unauthenticated);
+			return;
 		}
 
 		const json = await response.text();
