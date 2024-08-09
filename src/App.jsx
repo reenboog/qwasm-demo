@@ -7,7 +7,9 @@ import mime from 'mime';
 import Workspace from './Workspace';
 import './App.css';
 
-const chunkSize = 1024 * 1024;
+const ptChunkSize = 1024 * 1024;
+const aesAuthTagSize = 16;
+const ctChunkSize = ptChunkSize + aesAuthTagSize;
 // FIXME: remove when dir naming is introduced
 let dirIdx = 1;
 let cached_files = {};
@@ -50,11 +52,10 @@ const App = () => {
 		if (!bytes) {
 			console.log('no byyes');
 
-			// FIXME: implement
-			// let pt = await protocol.decrypt_block_for_file(ct, id);
-			// WARNING: this only reads whole-encrypted files for now; so either supply all the meta info (including chunk size), 
-			// or stick to one method of encryption (bulk or chunked)
-			// TODO: decrypt in chunks instead
+			const fileSize = await getFileSize(id);
+			console.log(`file size = ${fileSize}`);
+
+			bytes = await downloadFileInRanges(id, fileSize);
 		}
 
 		const blob = new Blob([bytes], { type: type });
@@ -63,6 +64,78 @@ const App = () => {
 
 		window.open(fileUrl);
 	};
+
+	const getFileSize = async (id) => {
+		const response = await fetch(`${host}/uploads/${id}`, {
+			method: 'HEAD',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-uploader-auth': 'aabb1122', // Replace with your auth token
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to invite: ${response.statusText}`);
+		}
+
+		const contentLength = response.headers.get('Content-Length');
+		if (!contentLength) {
+			throw new Error('Content-Length header is missing');
+		}
+
+		return contentLength;
+	};
+
+	const downloadFileInRanges = async (id, fileSize) => {
+		let downloaded = 0;
+		const ptFileSize = Math.ceil(fileSize / ctChunkSize) * ctChunkSize;
+		let pt = { offset: 0, data: new Uint8Array(ptFileSize) };
+		let chunkIdx = 0;
+
+		// FIXME: respect already downloaded content and predecrypt it into cache
+
+		while (downloaded < fileSize) {
+			const rangeStart = downloaded;
+			const rangeEnd = Math.min(downloaded + ctChunkSize - 1, fileSize - 1);
+
+			const chunk = await downloadChunk(id, rangeStart, rangeEnd);
+			const decrypted = await protocol.chunk_decrypt_for_file(new Uint8Array(await chunk.arrayBuffer()), id, chunkIdx);
+
+			pt.data.set(decrypted, pt.offset);
+			pt.offset += decrypted.byteLength;
+			cached_files[id] = pt.data;
+
+			downloaded += chunk.size;
+			chunkIdx += 1;
+
+			setProgress((prev) => ({
+				...prev,
+				[id]: { val: (downloaded / fileSize) * 100, pending: downloaded != fileSize, cached: downloaded == fileSize }
+			}));
+
+			console.log(`Downloaded chunk ${rangeStart}-${rangeEnd} (${chunk.size} bytes)`);
+		}
+
+		return pt.data;
+};
+
+	const downloadChunk = async (id, start, end) => {
+		const url = `${host}/uploads/chunk/${id}`;
+		const response = await fetch(url, {
+			method: 'GET',
+			headers: {
+				'Range': `bytes=${start}-${end}`,
+				'x-uploader-auth': 'aabb1122', // Replace with your auth token
+			}
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to download chunk: ${response.statusText}`);
+		}
+
+		return response.blob();
+	};
+
 
 	const handleRowClick = async (item) => {
 		if (item.is_dir()) {
@@ -127,8 +200,6 @@ const App = () => {
 				setCurrentDir(await protocol.ls_cur_mut());
 
 				fileIds.push({ id, file });
-				// apply limits, if need be
-				cached_files[id] = new Uint8Array(await file.arrayBuffer());
 			}
 
 			await Promise.all(fileIds.map(({ id, file }) => uploadFileInRanges(id, file)));
@@ -138,32 +209,43 @@ const App = () => {
 	};
 
 	const uploadFileInRanges = async (id, file) => {
-		const numChunks = Math.ceil(file.size / chunkSize);
+		const numChunks = Math.ceil(file.size / ptChunkSize);
 		let readOffset = 0;
 		let chunkIdx = 0;
 		let encryptedOffset = 0;
 		// IMPORTANT: aes gcm is used, so auth tag is appended to the end of each chunk! It makes encrypted
 		// chunks 16 bytes larger than plain text ones; therefore, when downloading & decrypting,
 		// add aes auth tag (16 bytes) to chunk_size first
-		const encryptedFileSize = file.size + numChunks * 16;
+		const encryptedFileSize = file.size + numChunks * aesAuthTagSize;
+
+		let toCache = { offset: 0, data: new Uint8Array(file.size) };
+		if (readOffset > 0) {
+			// ok, read the first readOffset bytes of what we suposedly have into a cache
+			toCache.data.set(new Uint8Array(await file.slice(0, readOffset).arrayBuffer()), 0);
+			toCache.offset += readOffset;
+		}
 
 		while (readOffset < file.size) {
-			const chunk = file.slice(readOffset, readOffset + chunkSize);
-			const encrypted = await protocol.chunk_encrypt_for_file(new Uint8Array(await chunk.arrayBuffer()), id, chunkIdx);
+			const chunk = new Uint8Array(await file.slice(readOffset, readOffset + ptChunkSize).arrayBuffer());
+			const encrypted = await protocol.chunk_encrypt_for_file(chunk, id, chunkIdx);
 
 			await uploadChunk(encrypted, encryptedOffset, encryptedFileSize, id);
 
 			encryptedOffset += encrypted.byteLength;
 			chunkIdx += 1;
 
+			toCache.data.set(chunk, toCache.offset);
+			toCache.offset += chunk.byteLength;
+			cached_files[id] = toCache.data;
+
 			setProgress((prev) => ({
 				...prev,
-				[id]: { val: (chunkIdx / numChunks) * 100, ready: chunkIdx === numChunks }
+				[id]: { val: (chunkIdx / numChunks) * 100, pending: chunkIdx != numChunks, cached: chunkIdx == numChunks }
 			}));
 
-			console.log(`${file.name} Uploaded chunk ${chunkIdx} / ${numChunks} of file ${file.name}; ready: ${(chunkIdx === numChunks) }`);
+			console.log(`${file.name} Uploaded chunk ${chunkIdx} / ${numChunks} of file ${file.name}; pending: ${(chunkIdx != numChunks) }`);
 
-			readOffset += chunkSize;
+			readOffset += ptChunkSize;
 		}
 
 		console.log(`File upload completed for ${file.name}`);
@@ -193,6 +275,13 @@ const App = () => {
 		let readOffset = 0;
 		const fileSize = file.size;
 
+		let toCache = { offset: 0, data: new Uint8Array(file.size) };
+		if (readOffset > 0) {
+			// ok, read the first readOffset bytes of what we suposedly have into a cache
+			toCache.data.set(new Uint8Array(await file.slice(0, readOffset).arrayBuffer()), 0);
+			toCache.offset += readOffset;
+		}
+
 		const stream = new ReadableStream({
 			start(controller) {
 				let chunkIdx = 0;
@@ -200,18 +289,22 @@ const App = () => {
 				const push = async () => {
 					if (readOffset < file.size) {
 						try {
-							const chunk = await file.slice(readOffset, readOffset + chunkSize).arrayBuffer();
-							const encrypted = await protocol.chunk_encrypt_for_file(new Uint8Array(chunk), id, chunkIdx);
+							const chunk = new Uint8Array(await file.slice(readOffset, readOffset + ptChunkSize).arrayBuffer());
+							const encrypted = await protocol.chunk_encrypt_for_file(chunk, id, chunkIdx);
 
 							controller.enqueue(encrypted);
-							readOffset += chunkSize;
+							readOffset += ptChunkSize;
+
+							toCache.data.set(chunk, toCache.offset);
+							toCache.offset += chunk.byteLength;
+							cached_files[id] = toCache.data;
 
 							setProgress(prev => ({
 								...prev,
-								[id]: { val: (readOffset / fileSize) * 100, ready: ( readOffset >= fileSize ) }
+								[id]: { val: (readOffset / fileSize) * 100, pending: toCache.data.length != fileSize, cached: toCache.data.length == fileSize }
 							}));
 
-							console.log(`enqueued ${chunkSize}, uploaded ${readOffset}`)
+							console.log(`enqueued ${ptChunkSize}, uploaded ${readOffset}`)
 
 							chunkIdx += 1;
 
@@ -258,9 +351,11 @@ const App = () => {
 
 		await uploadChunk(ct, offset, fileSize, id);
 
+		cached_files[id] = data;
+
 		setProgress(prev => ({
 			...prev,
-			[id]: { val: 100, ready: true }
+			[id]: { val: 100, pending: false, cached: true }
 		}));
 
 		console.log(`File upload completed for ${file.name}`);

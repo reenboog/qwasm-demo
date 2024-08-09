@@ -34,7 +34,7 @@ const FileTable = ({
 				</TableHead>
 				<TableBody>
 					{currentDir.breadcrumbs().length !== 0 && (
-						<TableRow key="back" onClick={onBackClick}>
+						<TableRow key="back" onClick={onBackClick} sx={{ cursor: 'pointer' }}>
 							<TableCell colSpan={3}>
 								<Box sx={{ display: 'flex', alignItems: 'center' }}>
 									<Box className='file-icon-container' ><FileIcon ext={null} /></Box>
@@ -44,7 +44,7 @@ const FileTable = ({
 						</TableRow>
 					)}
 					{currentDir.items().map((item, index) => (
-						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id()] || { val: 0, ready: true }} />
+						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id()] || { val: 0, pending: false, cached: false }} />
 					))}
 				</TableBody>
 			</Table>
