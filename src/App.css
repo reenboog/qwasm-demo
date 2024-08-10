@@ -23,7 +23,7 @@
 }
 
 .file-table tbody tr:hover {
-  background-color: #f6f8fa;
+  background-color: #fcfcfc;
 }
 
 .folder-icon {
@@ -56,6 +56,8 @@
 
 .file-icon-container {
   margin-right: 10px;
+  width: 24px;
+  height: 24px;
 }
 
 .drop-zone-overlay {
@@ -103,19 +105,4 @@
   margin: 0 6px;
   opacity: 0.5;
   color: #586069;
-}
-
-.progress-bar-container {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: transparent;
-}
-
-.progress-bar {
-  height: 100%;
-  background-color: #0366d6;
-  opacity: 0.2;
 }

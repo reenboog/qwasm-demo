@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, TableContainer, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
+import { Box, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Stack } from '@mui/material';
 import Breadcrumbs from './Breadcrumbs';
 import FileTableRow from './FileTableRow';
 import FileIcon from './FileIcon';
@@ -30,9 +30,13 @@ const FileTable = ({
 			<Table className="file-table">
 				<TableHead>
 					<TableRow>
-						<TableCell sx={{ width: '50%' }}>Name</TableCell>
-						<TableCell sx={{ width: '30%' }}>Created At</TableCell>
-						<TableCell sx={{ width: '20%' }}>Type</TableCell>
+						<TableCell>
+							<Stack direction='row' alignItems='center' justifyContent='flex-start'>
+								<Box sx={{ width: '50%' }}>Name</Box>
+								<Box sx={{ width: '30%' }}>Created At</Box>
+								<Box sx={{ width: '20%' }}>Type</Box>
+							</Stack>
+						</TableCell>
 					</TableRow>
 				</TableHead>
 				<TableBody>
@@ -52,7 +56,7 @@ const FileTable = ({
 				</TableBody>
 			</Table>
 		</TableContainer>
-		{dragActive && <DropToUpload />}
+		{dragActive === true && <DropToUpload />}
 	</Box>
 );
 
