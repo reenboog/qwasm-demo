@@ -37,7 +37,6 @@ const fetchSubtree = async () => {
 	return json;
 };
 
-
 const uploadNodes = async (json) => {
 	const url = `${host}/nodes`;
 
@@ -53,7 +52,6 @@ const uploadNodes = async (json) => {
 		throw new Error(`Failed to upload chunk: ${response.statusText}`);
 	}
 };
-
 
 const getMk = async (userId) => {
 	const url = `${host}/users/${userId}/mk`;
@@ -108,7 +106,19 @@ const getInvite = async (email) => {
 	return await res.text();
 };
 
+const invite = async (json) => {
+	const res = await fetch(`${host}/invite`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: json
+	});
 
+	if (!res.ok) {
+		throw new Error(`Failed to invite user: ${res.statusText}`);
+	}
+};
 
 const lockSession = async (tokenId, token) => {
 	const url = `${host}/sessions/lock/${tokenId}`;
@@ -200,7 +210,7 @@ const finishPasskeyAuth = async (authId, auth) => {
 };
 
 function netCallbacks() {
-	return new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
+	return new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, invite, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
 };
 
 export { netCallbacks, domain, host }

@@ -208,7 +208,6 @@ const App = () => {
 		return response.blob();
 	};
 
-
 	const handleRowClick = async (item) => {
 		if (item.is_dir()) {
 			await openDir(item.id());
@@ -237,19 +236,10 @@ const App = () => {
 	const handleAddUser = async (email, pin) => {
 		console.log('add user' + email + ' ' + pin);
 
-		// FIXME: can be moved to protocol
-		let json = protocol.export_all_seeds_to_email(pin, email);
-
-		const response = await fetch(`${host}/invite`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: json
-		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to add user: ${response.statusText}`);
+		try {
+			await protocol.invite_with_all_seeds_for_email(email, pin);
+		} catch (e) {
+			console.log(`Failed to add user: ${e}`);
 		}
 	}
 
@@ -458,12 +448,12 @@ const App = () => {
 		console.log('registering passkey');
 
 		try {
-
 			// FIXME: user a real password
 			await protocol.register_passkey("my YK", "123", "Alex", rpName, rpId);
 
 			console.log(`registered`);
 		} catch (e) {
+			alert('Failed to register passkey');
 			console.log('Error registering passkey');
 		}
 
