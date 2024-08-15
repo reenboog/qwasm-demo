@@ -139,7 +139,7 @@ const App = () => {
 	};
 
 	const getFileSize = async (id) => {
-		const response = await fetch(`${host}/uploads/${id}`, {
+		const res = await fetch(`${host}/uploads/${id}`, {
 			method: 'HEAD',
 			headers: {
 				'Content-Type': 'application/json',
@@ -147,11 +147,11 @@ const App = () => {
 			},
 		});
 
-		if (!response.ok) {
-			throw new Error(`Failed to invite: ${response.statusText}`);
+		if (!res.ok) {
+			throw new Error(`Failed to fetch file sie: ${res.statusText}`);
 		}
 
-		const contentLength = response.headers.get('Content-Length');
+		const contentLength = res.headers.get('Content-Length');
 		if (!contentLength) {
 			throw new Error('Content-Length header is missing');
 		}
@@ -238,6 +238,7 @@ const App = () => {
 	const handleAddUser = async (email, pin) => {
 		console.log('add user' + email + ' ' + pin);
 
+		// FIXME: can be moved to protocol
 		let json = protocol.export_all_seeds_to_email(pin, email);
 
 		const response = await fetch(`${host}/invite`, {
@@ -249,7 +250,7 @@ const App = () => {
 		});
 
 		if (!response.ok) {
-			throw new Error(`Failed to invite: ${response.statusText}`);
+			throw new Error(`Failed to add user: ${response.statusText}`);
 		}
 	}
 
@@ -483,6 +484,47 @@ const App = () => {
 		return await response.text();
 	};
 
+	const getInvite = async (email) => {
+		const res = await fetch(`${host}/invite/${email}`, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+			}
+		});
+
+		if (!res.ok) {
+			throw new Error(`Failed to get invite: ${res.statusText}`);
+		}
+
+		return await res.text();
+	};
+
+	const signup = async (json) => {
+		console.log("signin up");
+
+		await fetch(`${host}/signup`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: json
+		});
+	};
+
+	const unlock = async(json) => {
+		console.log('logging in');
+
+		const res = await fetch(`${host}/login`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: json
+		});
+
+		return await res.text();
+	}
+
 	const lockSession = async (tokenId, token) => {
 		const url = `${host}/sessions/lock/${tokenId}`;
 
@@ -576,77 +618,40 @@ const App = () => {
 		setState(State.Authenticating);
 		console.log('signup')
 
-		let user;
+		try {
+			let protocol;
 
-		if (pin) {
-			const welcome = await fetch(`${host}/invite/${email}`, {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-				}
-			});
-			const json = await welcome.text();
+			if (pin) {
+				protocol = await Protocol.register_as_admin(email, pass, pin, net, rememberMe);
+			} else {
+				protocol = await Protocol.register_as_god(email, pass, net, rememberMe);
+			}
 
-			user = await Protocol.register_as_admin(pass, json, pin, net, rememberMe);
-		} else {
-			user = await Protocol.register_as_god(pass, net, rememberMe);
-		}
-
-		const json = user.json();
-		const protocol = user.as_protocol();
-		const signup = `{ "email": "${email}", "pass": "${pass}", "user": ${json} }`;
-
-		console.log(signup);
-
-		const response = await fetch(`${host}/signup`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: signup
-		});
-
-		if (!response.ok) {
-			console.log('signup error', response.statusText);
+			setState(State.Ready);
+			setProtocol(protocol);
+			setCurrentDir(await protocol.ls_cur_mut());
+		} catch (e) {
+			console.log(`Error signing up: ${e}`);
+			alert('Failed to signup');
 			setState(State.Unauthenticated);
 		}
-
-		setState(State.Ready);
-		setProtocol(protocol);
-		setCurrentDir(await protocol.ls_cur_mut());
 	}
 
 	const handleLogin = async (email, pass, rememberMe) => {
 		setState(State.Authenticating);
 		console.log('login')
 
-		const login = `{ "email": "${email}", "pass": "${pass}" }`;
-		const response = await fetch(`${host}/login`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: login
-		});
+		try {
+			const protocol = await Protocol.unlock_with_pass(email, pass, net, rememberMe);
 
-		if (!response.ok) {
-			console.log('login error', response.statusText);
-			// have no fuel to style this, so it is what it is
+			setState(State.Ready);
+			setProtocol(protocol);
+			setCurrentDir(await protocol.ls_cur_mut());
+		} catch (e) {
+			console.log(`Error logging in: ${e}`);
 			alert('Failed to login');
 			setState(State.Unauthenticated);
-			return;
 		}
-
-		const json = await response.text();
-
-		console.log('api returned');
-		console.log(json);
-
-		const protocol = await Protocol.unlock_with_pass(pass, json, net, rememberMe);
-
-		setState(State.Ready);
-		setProtocol(protocol);
-		setCurrentDir(await protocol.ls_cur_mut());
 	}
 
 	const handleRegisterPasskey = async () => {
@@ -683,7 +688,7 @@ const App = () => {
 
 			try {
 				setState(State.Restoring);
-				const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth)
+				const network = new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth)
 				setNet(network);
 				const protocol = await Protocol.unlock_session_if_any(network);
 
@@ -693,7 +698,7 @@ const App = () => {
 			} catch (error) {
 				console.log('no session found', error);
 
-				const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
+				const network = new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
 				setNet(network);
 				setState(State.Unauthenticated);
 			}
