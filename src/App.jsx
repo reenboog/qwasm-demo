@@ -7,14 +7,13 @@ import mime from 'mime';
 import Workspace from './Workspace';
 import './App.css';
 import { genThumb } from './utils';
+import { netCallbacks, domain, host } from './net_callbacks';
 
 const ptChunkSize = 1024 * 1024;
 const aesAuthTagSize = 16;
 const ctChunkSize = ptChunkSize + aesAuthTagSize;
 let cached_files = {};
 let cached_thumbs = {};
-const domain = 'localhost';
-const host = `http://${domain}:5050`;
 const rpName = 'Mode Vault';
 const rpId = domain;
 
@@ -415,205 +414,6 @@ const App = () => {
 
 	const dragActive = useDragAndDrop(handleDrop);
 
-	const fetchSubtree = async () => {
-		// if (!response.ok) {
-		// throw new Error(JSON.stringify({
-		//   message: `HTTP error! status: ${response.status}`,
-		//   status: response.status,
-		//   recentHash: "exampleRecentHash"
-		// }));
-		// }
-
-		const data = [1, 2, 3];
-		const json = JSON.stringify(data);
-
-		return json;
-	};
-
-	const uploadNodes = async (json) => {
-		const url = `${host}/nodes`;
-
-		const response = await fetch(`${url}`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: json
-		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to upload chunk: ${response.statusText}`);
-		}
-	};
-
-	const getMk = async (userId) => {
-		const url = `${host}/users/${userId}/mk`;
-
-		console.log("getting mk: " + userId);
-
-		const response = await fetch(`${url}`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to get mk: ${response.statusText}`);
-		}
-
-		return await response.text();
-	};
-
-	const getUser = async (userId) => {
-		const url = `${host}/users/${userId}`;
-
-		console.log("getting user: " + userId);
-
-		const response = await fetch(`${url}`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to get user: ${response.statusText}`);
-		}
-
-		return await response.text();
-	};
-
-	const getInvite = async (email) => {
-		const res = await fetch(`${host}/invite/${email}`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-			}
-		});
-
-		if (!res.ok) {
-			throw new Error(`Failed to get invite: ${res.statusText}`);
-		}
-
-		return await res.text();
-	};
-
-	const signup = async (json) => {
-		console.log("signin up");
-
-		await fetch(`${host}/signup`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: json
-		});
-	};
-
-	const unlock = async(json) => {
-		console.log('logging in');
-
-		const res = await fetch(`${host}/login`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: json
-		});
-
-		return await res.text();
-	}
-
-	const lockSession = async (tokenId, token) => {
-		const url = `${host}/sessions/lock/${tokenId}`;
-
-		console.log("locking session: " + tokenId);
-
-		const response = await fetch(`${url}`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: token
-		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to lock session: ${response.statusText}`);
-		}
-	};
-
-	const unlockSession = async (tokenId) => {
-		const url = `${host}/sessions/unlock/${tokenId}`;
-
-		console.log("locking session: " + tokenId);
-
-		const response = await fetch(`${url}`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-		});
-
-		if (!response.ok) {
-			throw new Error(`Failed to unlock session: ${response.statusText}`);
-		}
-
-		return await response.text();
-	};
-
-	const startPasskeyRegistration = async (userId) => {
-		let res = await fetch(`${host}/webauthn/start-reg/${userId}`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-		});
-
-		if (!res.ok) {
-			throw new Error(`Failed to start passkey registration: ${res.statusText}`);
-		}
-
-		return await res.text();
-	};
-
-	const finishPasskeyRegistration = async (userId, cred) => {
-		const res = await fetch(`${host}/webauthn/finish-reg/${userId}`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: cred
-		});
-
-		if (!res.ok) {
-			throw new Error(`Failed to finish passkey registration: ${res.statusText}`);
-		}
-	};
-
-	const startPasskeyAuth = async () => {
-		const res = await fetch(`${host}/webauthn/start-auth`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-		});
-
-		if (!res.ok) {
-			throw new Error(`Failed to start passkey auth: ${res.statusText}`);
-		}
-
-		return await res.text();
-	};
-
-	const finishPasskeyAuth = async (authId, auth) => {
-		const res = await fetch(`${host}/webauthn/finish-auth/${authId}`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: auth
-		});
-
-		if (!res.ok) {
-			throw new Error(`Failed to finish passkey auth: ${res.statusText}`);
-		}
-
-		return await res.text();
-	};
-
 	const handleSignup = async (email, pass, pin, rememberMe) => {
 		setState(State.Authenticating);
 		console.log('signup')
@@ -673,12 +473,20 @@ const App = () => {
 	const handleAuthPaskey = async (rememberMe) => {
 		console.log('authenticating');
 
-		const protocol = await Protocol.auth_passkey(rpId, net, rememberMe);
-		console.log('authenticated');
+		try {
+			const protocol = await Protocol.auth_passkey(rpId, net, rememberMe);
+			console.log('authenticated');
 
-		setState(State.Ready);
-		setProtocol(protocol);
-		setCurrentDir(await protocol.ls_cur_mut());
+			setState(State.Ready);
+			setProtocol(protocol);
+			setCurrentDir(await protocol.ls_cur_mut());
+		} catch (e) {
+			console.log(`Error authenticating with passkey: ${e}`);
+
+			const network = netCallbacks();
+			setNet(network);
+			setState(State.Unauthenticated);
+		}
 	}
 
 	useEffect(() => {
@@ -688,7 +496,7 @@ const App = () => {
 
 			try {
 				setState(State.Restoring);
-				const network = new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth)
+				const network = netCallbacks();
 				setNet(network);
 				const protocol = await Protocol.unlock_session_if_any(network);
 
@@ -698,7 +506,7 @@ const App = () => {
 			} catch (error) {
 				console.log('no session found', error);
 
-				const network = new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
+				const network = netCallbacks();
 				setNet(network);
 				setState(State.Unauthenticated);
 			}
