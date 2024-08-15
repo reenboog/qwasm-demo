@@ -38,4 +38,16 @@ const genThumb = (file) => {
 	});
 };
 
-export { validateEmail, truncName, genPin, genThumb };
+function base64ToUint8Array(base64) {
+  return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+}
+
+function bufferToBase64(buffer) {
+	return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+}
+
+function bufferToString(buffer) {
+	return new TextDecoder().decode(buffer);
+}
+
+export { validateEmail, truncName, genPin, genThumb, base64ToUint8Array, bufferToBase64, bufferToString };

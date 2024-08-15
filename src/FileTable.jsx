@@ -12,7 +12,7 @@ const FileTable = ({
 	onBreadcrumbClick,
 	onAddUserClick,
 	onUploadClick,
-	handleAddDirClick,
+	onAddDirClick,
 	progress,
 	thumbs,
 	dragActive
@@ -24,7 +24,7 @@ const FileTable = ({
 			onBreadcrumbClick={onBreadcrumbClick}
 			onAddUserClick={onAddUserClick}
 			onUploadClick={onUploadClick}
-			handleAddDirClick={handleAddDirClick}
+			onAddDirClick={onAddDirClick}
 		/>
 		<TableContainer>
 			<Table className="file-table">

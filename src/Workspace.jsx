@@ -13,8 +13,10 @@ const Workspace = ({
 	onBreadcrumbClick,
 	onAddUserClick,
 	onUploadClick,
-	handleAddDirClick,
+	onAddDirClick,
 	onLogout,
+	onRegisterPasskey,
+	onAuthPasskey,
 	progress,
 	thumbs,
 	dragActive,
@@ -32,7 +34,7 @@ const Workspace = ({
 					onBreadcrumbClick={onBreadcrumbClick}
 					onAddUserClick={onAddUserClick}
 					onUploadClick={onUploadClick}
-					handleAddDirClick={handleAddDirClick}
+					onAddDirClick={onAddDirClick}
 					progress={progress}
 					thumbs={thumbs}
 					dragActive={dragActive}
@@ -40,7 +42,7 @@ const Workspace = ({
 			case 'messages':
 				return <Messages />;
 			case 'settings':
-				return <Settings />;
+				return <Settings onRegisterPasskey={onRegisterPasskey} onAuthPasskey={onAuthPasskey} />;
 			default:
 				return null;
 		}

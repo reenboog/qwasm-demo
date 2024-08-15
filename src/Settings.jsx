@@ -1,11 +1,19 @@
 
 import React, { useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, Button } from '@mui/material';
+import { base64ToUint8Array, bufferToBase64, bufferToString } from './utils';
 
-const Settings = () => (
-	<Box display="flex" justifyContent="center" alignItems="center" height="100%">
-		<p>Settings</p>
-	</Box>
-);
+const Settings = ({ onRegisterPasskey, onAuthPasskey }) => {
+	return (
+		<Box display="flex" justifyContent="center" alignItems="center" height="100vh" sx={{ mt: -20,  }}>
+			<Button variant="contained" color="primary" onClick={onRegisterPasskey} sx={{ mr: 2 }}>
+				Register
+			</Button>
+			<Button variant="text" onClick={onAuthPasskey}>
+				Authenticate
+			</Button>
+		</Box>
+	);
+}
 
 export default Settings;

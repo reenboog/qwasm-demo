@@ -7,7 +7,7 @@ import AddUser from '@mui/icons-material/PersonAdd';
 import InviteByMail from './InviteByEmail';
 import CreateDir from './CreateDir';
 
-const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUserClick, onUploadClick, handleAddDirClick }) => {
+const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUserClick, onUploadClick, onAddDirClick }) => {
 	const [showInvite, setShowInvite] = useState(false);
 	const [showCreateDir, setShowCreateDir] = useState(false);
 	const fileInputRef = useRef(null);
@@ -44,7 +44,7 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUser
 					onCancel={() => setShowCreateDir(false)}
 					onConfirm={(name) => {
 						console.log('created dir: ' + name);
-						handleAddDirClick(name)
+						onAddDirClick(name)
 						setShowCreateDir(false);
 					}}
 				/>) : (

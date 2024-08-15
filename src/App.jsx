@@ -14,6 +14,8 @@ const ctChunkSize = ptChunkSize + aesAuthTagSize;
 let cached_files = {};
 let cached_thumbs = {};
 const host = 'http://localhost:5050';
+const rpName = 'Mode Vault';
+const rpId = host;
 
 const State = {
 	Checking: 'CHECKING',
@@ -517,6 +519,58 @@ const App = () => {
 		return await response.text();
 	};
 
+	const startPasskeyRegistration = async (userId) => {
+		let res = await fetch(`${host}/webauthn/start-reg/${userId}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+		});
+
+		if (!res.ok) {
+			throw new Error(`Failed to start passkey registration: ${res.statusText}`);
+		}
+
+		return await res.text();
+	};
+
+	const finishPasskeyRegistration = async (userId, cred) => {
+		const res = await fetch(`${host}/webauthn/finish-reg/${userId}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: cred
+		});
+
+		if (!res.ok) {
+			throw new Error(`Failed to finish passkey registration: ${res.statusText}`);
+		}
+	};
+
+	const startPasskeyAuth = async () => {
+		const res = await fetch(`${host}/webauthn/start-auth`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+		});
+
+		if (!res.ok) {
+			throw new Error(`Failed to start passkey auth: ${res.statusText}`);
+		}
+
+		return await res.text();
+	};
+
+	const finishPasskeyAuth = async (authId, auth) => {
+		const res = await fetch(`${host}/webauthn/finish-auth/${authId}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: auth
+		});
+
+		if (!res.ok) {
+			throw new Error(`Failed to finish passkey auth: ${res.statusText}`);
+		}
+
+		return await res.text();
+	};
+
 	const handleSignup = async (email, pass, pin, rememberMe) => {
 		setState(State.Authenticating);
 		console.log('signup')
@@ -604,6 +658,23 @@ const App = () => {
 		setCurrentDir(await protocol.ls_cur_mut());
 	}
 
+	const handleRegisterPasskey = async () => {
+		console.log('registering passkey');
+
+		let prfOutput = await protocol.register_passkey("my YK", "123", "Alex", rpName, rpId);
+
+		console.log(`registered with: ${prfOutput}.`);
+	};
+
+	const handleAuthPaskey = async () => {
+		console.log('authenticating');
+
+		const prfOutput = await protocol.auth_passkey(rpId);
+		console.log('wow');
+
+		console.log(`authenticated with ${prfOutput}.`);
+	}
+
 	useEffect(() => {
 		const restoreSessionIfAny = async () => {
 			setState(State.Checking);
@@ -611,7 +682,7 @@ const App = () => {
 
 			try {
 				setState(State.Restoring);
-				const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession);
+				const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth)
 				setNet(network);
 				const protocol = await Protocol.unlock_session_if_any(network);
 
@@ -621,7 +692,7 @@ const App = () => {
 			} catch (error) {
 				console.log('no session found', error);
 
-				const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession);
+				const network = new JsNet(fetchSubtree, uploadNodes, getMk, getUser, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
 				setNet(network);
 				setState(State.Unauthenticated);
 			}
@@ -663,8 +734,10 @@ const App = () => {
 					onBreadcrumbClick={handleBreadcrumbClick}
 					onAddUserClick={handleAddUser}
 					onUploadClick={handleUpload}
-					handleAddDirClick={handleAddDir}
+					onAddDirClick={handleAddDir}
 					onLogout={handleLogoutClick}
+					onRegisterPasskey={handleRegisterPasskey}
+					onAuthPasskey={handleAuthPaskey}
 					progress={progress}
 					thumbs={thumbs}
 					dragActive={dragActive}
