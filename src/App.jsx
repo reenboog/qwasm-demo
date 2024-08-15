@@ -13,9 +13,10 @@ const aesAuthTagSize = 16;
 const ctChunkSize = ptChunkSize + aesAuthTagSize;
 let cached_files = {};
 let cached_thumbs = {};
-const host = 'http://localhost:5050';
+const domain = 'localhost';
+const host = `http://${domain}:5050`;
 const rpName = 'Mode Vault';
-const rpId = host;
+const rpId = domain;
 
 const State = {
 	Checking: 'CHECKING',
@@ -586,9 +587,9 @@ const App = () => {
 			});
 			const json = await welcome.text();
 
-			user = Protocol.register_as_admin(pass, json, pin, net);
+			user = await Protocol.register_as_admin(pass, json, pin, net, rememberMe);
 		} else {
-			user = Protocol.register_as_god(pass, net);
+			user = await Protocol.register_as_god(pass, net, rememberMe);
 		}
 
 		const json = user.json();
@@ -608,10 +609,6 @@ const App = () => {
 		if (!response.ok) {
 			console.log('signup error', response.statusText);
 			setState(State.Unauthenticated);
-		}
-
-		if (rememberMe) {
-			await protocol.lock_session(pass);
 		}
 
 		setState(State.Ready);
@@ -645,13 +642,7 @@ const App = () => {
 		console.log('api returned');
 		console.log(json);
 
-		const protocol = await Protocol.unlock_with_pass(pass, json, net);
-
-		if (rememberMe) {
-			console.log('locking session');
-
-			await protocol.lock_session(pass);
-		}
+		const protocol = await Protocol.unlock_with_pass(pass, json, net, rememberMe);
 
 		setState(State.Ready);
 		setProtocol(protocol);
@@ -661,18 +652,28 @@ const App = () => {
 	const handleRegisterPasskey = async () => {
 		console.log('registering passkey');
 
-		let prfOutput = await protocol.register_passkey("my YK", "123", "Alex", rpName, rpId);
+		try {
 
-		console.log(`registered with: ${prfOutput}.`);
+			// FIXME: user a real password
+			await protocol.register_passkey("my YK", "123", "Alex", rpName, rpId);
+
+			console.log(`registered`);
+		} catch (e) {
+			console.log('Error registering passkey');
+		}
+
+		// FIXME: fetch passkey list
 	};
 
-	const handleAuthPaskey = async () => {
+	const handleAuthPaskey = async (rememberMe) => {
 		console.log('authenticating');
 
-		const prfOutput = await protocol.auth_passkey(rpId);
-		console.log('wow');
+		const protocol = await Protocol.auth_passkey(rpId, net, rememberMe);
+		console.log('authenticated');
 
-		console.log(`authenticated with ${prfOutput}.`);
+		setState(State.Ready);
+		setProtocol(protocol);
+		setCurrentDir(await protocol.ls_cur_mut());
 	}
 
 	useEffect(() => {
@@ -724,7 +725,7 @@ const App = () => {
 				</Box>
 			)}
 			{state === State.Unauthenticated && (
-				<AuthPage onSignupClick={handleSignup} onLoginClick={handleLogin} />
+				<AuthPage onSignupClick={handleSignup} onLoginClick={handleLogin} onAuthPasskey={handleAuthPaskey} />
 			)}
 			{state === State.Ready && protocol !== null && currentDir !== null && (
 				<Workspace
@@ -737,7 +738,6 @@ const App = () => {
 					onAddDirClick={handleAddDir}
 					onLogout={handleLogoutClick}
 					onRegisterPasskey={handleRegisterPasskey}
-					onAuthPasskey={handleAuthPaskey}
 					progress={progress}
 					thumbs={thumbs}
 					dragActive={dragActive}

@@ -16,7 +16,6 @@ const Workspace = ({
 	onAddDirClick,
 	onLogout,
 	onRegisterPasskey,
-	onAuthPasskey,
 	progress,
 	thumbs,
 	dragActive,
@@ -42,7 +41,7 @@ const Workspace = ({
 			case 'messages':
 				return <Messages />;
 			case 'settings':
-				return <Settings onRegisterPasskey={onRegisterPasskey} onAuthPasskey={onAuthPasskey} />;
+				return <Settings onRegisterPasskey={onRegisterPasskey} />;
 			default:
 				return null;
 		}

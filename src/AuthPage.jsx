@@ -3,7 +3,7 @@ import { Box, Container, TextField, Button, Typography, FormGroup, FormControlLa
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import { validateEmail } from './utils';
 
-const AuthPage = ({ onSignupClick, onLoginClick }) => {
+const AuthPage = ({ onSignupClick, onLoginClick, onAuthPasskey }) => {
 	const [isSigningUp, setIsSigningUp] = useState(false);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -65,10 +65,6 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 		if (e.target.value) {
 			setPasswordError('');
 		}
-	};
-
-	const handlePasskey = () => {
-		console.log('pass key tapped');
 	};
 
 	return (
@@ -137,12 +133,12 @@ const AuthPage = ({ onSignupClick, onLoginClick }) => {
 							>
 								Login
 							</Button>
-							{/* <IconButton
+							<IconButton
 								color="primary"
 								sx={{ width: 30, height: 30, marginRight: '-16px', marginLeft: '20px' }}
-								onClick={handlePasskey}>
+								onClick={() => { onAuthPasskey(rememberMe) }}>
 								<FingerprintIcon sx={{ color: '#586069' }}/>
-							</IconButton> */}
+							</IconButton>
 						</Box>
 						<Button
 							variant="text"
