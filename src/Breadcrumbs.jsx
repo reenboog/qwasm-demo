@@ -20,7 +20,7 @@ const Breadcrumbs = ({ breadcrumbs, currentDirName, onBreadcrumbClick, onAddUser
 		<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 1, paddingLeft: '16px', paddingTop: '8px', paddingBottom: '0px', paddingRight: '0px' }}>
 			<Box sx={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center' }}>
 				{breadcrumbs.map((breadcrumb) => (
-					<Box key={breadcrumb.id()} sx={{ display: 'inline-flex', alignItems: 'center' }}>
+					<Box key={breadcrumb.id().js_val()} sx={{ display: 'inline-flex', alignItems: 'center' }}>
 						<Typography onClick={() => onBreadcrumbClick(breadcrumb.id())} className="breadcrumb">
 							{breadcrumb.name()}
 						</Typography>

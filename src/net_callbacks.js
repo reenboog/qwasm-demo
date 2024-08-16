@@ -53,6 +53,7 @@ const uploadNodes = async (json) => {
 	}
 };
 
+// userId: base64-encoded string
 const getMk = async (userId) => {
 	const url = `${host}/users/${userId}/mk`;
 
@@ -72,6 +73,7 @@ const getMk = async (userId) => {
 	return await response.text();
 };
 
+// userId: base64-encoded string
 const getUser = async (userId) => {
 	const url = `${host}/users/${userId}`;
 
@@ -91,6 +93,7 @@ const getUser = async (userId) => {
 	return await response.text();
 };
 
+// email: base64-encoded string
 const getInvite = async (email) => {
 	const res = await fetch(`${host}/invite/${email}`, {
 		method: 'GET',
@@ -120,6 +123,7 @@ const invite = async (json) => {
 	}
 };
 
+// tokenId: base64-encoded string
 const lockSession = async (tokenId, token) => {
 	const url = `${host}/sessions/lock/${tokenId}`;
 
@@ -138,10 +142,11 @@ const lockSession = async (tokenId, token) => {
 	}
 };
 
+// tokenId: base64-encoded string
 const unlockSession = async (tokenId) => {
 	const url = `${host}/sessions/unlock/${tokenId}`;
 
-	console.log("locking session: " + tokenId);
+	console.log("unlocking session: " + tokenId);
 
 	const response = await fetch(`${url}`, {
 		method: 'POST',
@@ -157,6 +162,7 @@ const unlockSession = async (tokenId) => {
 	return await response.text();
 };
 
+// userId: base64-encoded string
 const startPasskeyRegistration = async (userId) => {
 	let res = await fetch(`${host}/webauthn/start-reg/${userId}`, {
 		method: 'POST',
@@ -170,6 +176,7 @@ const startPasskeyRegistration = async (userId) => {
 	return await res.text();
 };
 
+// userId: base64-encoded string
 const finishPasskeyRegistration = async (userId, cred) => {
 	const res = await fetch(`${host}/webauthn/finish-reg/${userId}`, {
 		method: 'POST',
@@ -195,6 +202,7 @@ const startPasskeyAuth = async () => {
 	return await res.text();
 };
 
+// authId: base64-encoded string
 const finishPasskeyAuth = async (authId, auth) => {
 	const res = await fetch(`${host}/webauthn/finish-auth/${authId}`, {
 		method: 'POST',

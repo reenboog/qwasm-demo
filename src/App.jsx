@@ -12,7 +12,9 @@ import { netCallbacks, domain, host } from './net_callbacks';
 const ptChunkSize = 1024 * 1024;
 const aesAuthTagSize = 16;
 const ctChunkSize = ptChunkSize + aesAuthTagSize;
+// { base64: Uint8Array }
 let cached_files = {};
+// { base64: Uint8Array }
 let cached_thumbs = {};
 const rpName = 'Mode Vault';
 const rpId = domain;
@@ -35,7 +37,7 @@ const App = () => {
 	const [mountKey, setMountKey] = useState(0);
 
 	const openDir = async (id) => {
-		console.log(`Opening directory: ${id}`);
+		console.log(`Opening directory: ${id.js_val()}`);
 
 		try {
 			setCurrentDir(await protocol.cd_to_dir(id));
@@ -44,13 +46,14 @@ const App = () => {
 		}
 	};
 
+	// id: Uid
 	const openFile = async (id) => {
-		console.log(`Opening file: ${id}`);
+		console.log(`Opening file: ${id.js_val()}`);
 
 		// if cached open
 		// otherwise start downloading and updating progress
-		let type = mime.getType(currentDir.items().find((file) => file.id() === id).ext());
-		let bytes = cached_files[id];
+		let type = mime.getType(currentDir.items().find((file) => file.id().js_val() == id.js_val()).ext());
+		let bytes = cached_files[id.js_val()];
 
 		if (!bytes) {
 			console.log('no byyes');
@@ -60,16 +63,16 @@ const App = () => {
 
 			bytes = await downloadFileInRanges(id, fileSize);
 
-			if (!cached_thumbs[id] && ['image/jpeg', 'image/png', 'image/gif', 'image/avif', 'image/webp'].includes(type)) {
+			if (!cached_thumbs[id.js_val()] && ['image/jpeg', 'image/png', 'image/gif', 'image/avif', 'image/webp'].includes(type)) {
 				const blob = new Blob([bytes], { type: type });
 				const thumb = await genThumb(blob);
-				cached_thumbs[id] = thumb;
+				cached_thumbs[id.js_val()] = thumb;
 
 				console.log('setting thumb');
 				// does not rerender
 				setThumbs((prev) => ({
 					...prev,
-					[id]: thumb
+					[id.js_val()]: thumb
 				}));
 			}
 		}
@@ -93,15 +96,16 @@ const App = () => {
 				console.log(`Type: ${file.type}`);
 				console.log(`Ext: ${ext}`);
 
+				// id: Uid
 				let id = await protocol.touch(file.name, ext);
 
 				if (['jpg', 'jpeg', 'png', 'gif', 'avif', 'webp'].includes(ext.toLowerCase())) {
 					const thumb = await genThumb(file);
-					cached_thumbs[id] = thumb;
+					cached_thumbs[id.js_val()] = thumb;
 
 					setThumbs((prev) => ({
 						...prev,
-						[id]: thumb
+						[id.js_val()]: thumb
 					}));
 				}
 
@@ -137,8 +141,9 @@ const App = () => {
 		await processFiles(files);
 	};
 
+	// id: Uid
 	const getFileSize = async (id) => {
-		const res = await fetch(`${host}/uploads/${id}`, {
+		const res = await fetch(`${host}/uploads/${id.js_val()}`, {
 			method: 'HEAD',
 			headers: {
 				'Content-Type': 'application/json',
@@ -158,6 +163,7 @@ const App = () => {
 		return contentLength;
 	};
 
+	// id: Uid
 	const downloadFileInRanges = async (id, fileSize) => {
 		let downloaded = 0;
 		const ptFileSize = Math.ceil(fileSize / ctChunkSize) * ctChunkSize;
@@ -175,14 +181,14 @@ const App = () => {
 
 			pt.data.set(decrypted, pt.offset);
 			pt.offset += decrypted.byteLength;
-			cached_files[id] = pt.data;
+			cached_files[id.js_val()] = pt.data;
 
 			downloaded += chunk.size;
 			chunkIdx += 1;
 
 			setProgress((prev) => ({
 				...prev,
-				[id]: { val: (downloaded / fileSize) * 100, pending: downloaded != fileSize, cached: downloaded == fileSize }
+				[id.js_val()]: { val: (downloaded / fileSize) * 100, pending: downloaded != fileSize, cached: downloaded == fileSize }
 			}));
 
 			console.log(`Downloaded chunk ${rangeStart}-${rangeEnd} (${chunk.size} bytes)`);
@@ -191,8 +197,9 @@ const App = () => {
 		return pt.data;
 	};
 
+	// id: Uid
 	const downloadChunk = async (id, start, end) => {
-		const url = `${host}/uploads/chunk/${id}`;
+		const url = `${host}/uploads/chunk/${id.js_val()}`;
 		const response = await fetch(url, {
 			method: 'GET',
 			headers: {
@@ -229,6 +236,7 @@ const App = () => {
 		setCurrentDir(await protocol.go_back());
 	};
 
+	// id: Uid
 	const handleBreadcrumbClick = async (id) => {
 		await openDir(id);
 	};
@@ -243,6 +251,7 @@ const App = () => {
 		}
 	}
 
+	// id: Uid
 	const uploadFileInRanges = async (id, file) => {
 		const numChunks = Math.ceil(file.size / ptChunkSize);
 		let readOffset = 0;
@@ -271,11 +280,11 @@ const App = () => {
 
 			toCache.data.set(chunk, toCache.offset);
 			toCache.offset += chunk.byteLength;
-			cached_files[id] = toCache.data;
+			cached_files[id.js_val()] = toCache.data;
 
 			setProgress((prev) => ({
 				...prev,
-				[id]: { val: (chunkIdx / numChunks) * 100, pending: chunkIdx != numChunks, cached: chunkIdx == numChunks }
+				[id.js_val()]: { val: (chunkIdx / numChunks) * 100, pending: chunkIdx != numChunks, cached: chunkIdx == numChunks }
 			}));
 
 			console.log(`${file.name} Uploaded chunk ${chunkIdx} / ${numChunks} of file ${file.name}; pending: ${(chunkIdx != numChunks)}`);
@@ -286,9 +295,10 @@ const App = () => {
 		console.log(`File upload completed for ${file.name}`);
 	};
 
+	// id: Uid
 	const uploadChunk = async (chunk, offset, fileSize, id) => {
 		const url = `${host}/uploads/chunk`;
-		const response = await fetch(`${url}/${id}`, {
+		const response = await fetch(`${url}/${id.js_val()}`, {
 			method: 'POST',
 			headers: {
 				'x-uploader-auth': 'aabb1122', // Replace with your auth token
@@ -303,10 +313,10 @@ const App = () => {
 		}
 	};
 
+	// id: Uid
 	const uploadFileInStream = async (id, file) => {
 		// WARNING: may not work locally due to `net::ERR_H2_OR_QUIC_REQUIRED`
 		const url = `${host}/uploads/stream`;
-		const fileId = id;
 		let readOffset = 0;
 		const fileSize = file.size;
 
@@ -332,11 +342,11 @@ const App = () => {
 
 							toCache.data.set(chunk, toCache.offset);
 							toCache.offset += chunk.byteLength;
-							cached_files[id] = toCache.data;
+							cached_files[id.js_val()] = toCache.data;
 
 							setProgress(prev => ({
 								...prev,
-								[id]: { val: (readOffset / fileSize) * 100, pending: toCache.data.length != fileSize, cached: toCache.data.length == fileSize }
+								[id.js_val()]: { val: (readOffset / fileSize) * 100, pending: toCache.data.length != fileSize, cached: toCache.data.length == fileSize }
 							}));
 
 							console.log(`enqueued ${ptChunkSize}, uploaded ${readOffset}`)
@@ -358,7 +368,7 @@ const App = () => {
 		});
 
 		try {
-			const response = await fetch(`${url}/${fileId}`, {
+			const response = await fetch(`${url}/${id.js_val()}`, {
 				method: 'POST',
 				headers: {
 					'x-uploader-auth': 'aabb1122',
@@ -376,6 +386,7 @@ const App = () => {
 		}
 	};
 
+	// id: Uid
 	const uploadFileInBulk = async (id, file) => {
 		const offset = 0;
 		const data = new Uint8Array(await file.arrayBuffer());
@@ -386,11 +397,11 @@ const App = () => {
 
 		await uploadChunk(ct, offset, fileSize, id);
 
-		cached_files[id] = data;
+		cached_files[id.js_val()] = data;
 
 		setProgress(prev => ({
 			...prev,
-			[id]: { val: 100, pending: false, cached: true }
+			[id.js_val()]: { val: 100, pending: false, cached: true }
 		}));
 
 		console.log(`File upload completed for ${file.name}`);

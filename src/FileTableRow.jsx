@@ -44,7 +44,7 @@ const FileTableRow = ({ item, onClick, progress, thumb }) => {
 								bottom: 0,
 								width: `${progress.val}%`,
 								backgroundColor: '#0366d6',
-								opacity: '0.09',
+								opacity: '0.1',
 								pointerEvents: 'none',
 							}}
 						></Box>

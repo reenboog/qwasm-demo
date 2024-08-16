@@ -51,7 +51,7 @@ const FileTable = ({
 						</TableRow>
 					)}
 					{currentDir.items().map((item, index) => (
-						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id()] || { val: 0, pending: false, cached: false }} thumb={thumbs[item.id()]} />
+						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id().js_val()] || { val: 0, pending: false, cached: false }} thumb={thumbs[item.id().js_val()]} />
 					))}
 				</TableBody>
 			</Table>
