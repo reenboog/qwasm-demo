@@ -9,9 +9,8 @@ import './App.css';
 import { genThumb } from './utils';
 import { netCallbacks, domain, host } from './net_callbacks';
 
-const ptChunkSize = 1024 * 1024;
+// s3 suggested min chunk size is 5MB
 const aesAuthTagSize = 16;
-const ctChunkSize = ptChunkSize + aesAuthTagSize;
 // { base64: Uint8Array }
 let cached_files = {};
 // { base64: Uint8Array }
@@ -56,28 +55,50 @@ const App = () => {
 		let bytes = cached_files[id.js_val()];
 
 		if (!bytes) {
-			console.log('no byyes');
+			console.log('no bytes');
 
-			const fileSize = await getFileSize(id);
-			console.log(`file size = ${fileSize}`);
+			const fileInfo = await getFileInfo(id);
 
-			bytes = await downloadFileInRanges(id, fileSize);
+			let url, encAlg, chunkSize, parts, fileSize;
 
-			if (!cached_thumbs[id.js_val()] && ['image/jpeg', 'image/png', 'image/gif', 'image/avif', 'image/webp'].includes(type)) {
-				const blob = new Blob([bytes], { type: type });
-				const thumb = await genThumb(blob);
-				cached_thumbs[id.js_val()] = thumb;
+			if (fileInfo.status.Ready) {
+				url = fileInfo.status.Ready.url;
+				encAlg = fileInfo.enc_alg;
+				chunkSize = fileInfo.chunk_size;
+				fileSize = fileInfo.status.Ready.content_length;
 
-				console.log('setting thumb');
-				// does not rerender
-				setThumbs((prev) => ({
-					...prev,
-					[id.js_val()]: thumb
-				}));
+				console.log(`url = ${url}, encAlg = ${encAlg}, chunkSize = ${chunkSize}, fileSize = ${fileSize}`);
+				bytes = await downloadFileMultipart(id, url, fileSize, chunkSize, encAlg);
+
+				if (!cached_thumbs[id.js_val()] && ['image/jpeg', 'image/png', 'image/gif', 'image/avif', 'image/webp'].includes(type)) {
+					const blob = new Blob([bytes], { type: type });
+					const thumb = await genThumb(blob);
+					cached_thumbs[id.js_val()] = thumb;
+
+					console.log('setting thumb');
+					// does not rerender
+					setThumbs((prev) => ({
+						...prev,
+						[id.js_val()]: thumb
+					}));
+				}
+
+				await openFileInMemWithData(type, bytes);
+			} else if (fileInfo.status.Pending) {
+				// an incomplete upload; reupload, if possible
+				parts = fileInfo.status.Pending.parts;
+				encAlg = fileInfo.enc_alg;
+				chunkSize = fileInfo.chunk_size;
+
+				console.log(`file incomplete: parts = ${JSON.stringify(parts)}, encAlg = ${encAlg}, chunkSize = ${chunkSize}`);
 			}
+		} else {
+			await openFileInMemWithData(type, bytes);
 		}
+	};
 
-		const blob = new Blob([bytes], { type: type });
+	const openFileInMemWithData = async (type, data) => {
+		const blob = new Blob([data], { type: type });
 		const fileUrl = URL.createObjectURL(blob);
 
 		window.open(fileUrl);
@@ -114,9 +135,7 @@ const App = () => {
 				fileIds.push({ id, file });
 			}
 
-			await Promise.all(fileIds.map(({ id, file }) => uploadFileInRanges(id, file)));
-			// fileIds.map(({ id, file }) => uploadFileInBulk(id, file))
-			// fileIds.map(({ id, file }) => uploadFileInStream(id, file))
+			await Promise.all(fileIds.map(({ id, file }) => uploadFileMultipart(id, file)));
 		}
 	};
 
@@ -142,12 +161,12 @@ const App = () => {
 	};
 
 	// id: Uid
-	const getFileSize = async (id) => {
-		const res = await fetch(`${host}/uploads/${id.js_val()}`, {
-			method: 'HEAD',
+	const getFileInfo = async (id) => {
+		const res = await fetch(`${host}/uploads/info/${id.js_val()}`, {
+			method: 'GET',
 			headers: {
-				'Content-Type': 'application/json',
-				'x-uploader-auth': 'aabb1122', // Replace with your auth token
+				'Content-Type': 'application/json'
+				// 'x-uploader-auth': 'aabb1122', // Replace with your auth token
 			},
 		});
 
@@ -155,18 +174,20 @@ const App = () => {
 			throw new Error(`Failed to fetch file sie: ${res.statusText}`);
 		}
 
-		const contentLength = res.headers.get('Content-Length');
-		if (!contentLength) {
-			throw new Error('Content-Length header is missing');
-		}
+		const info = await res.json();
 
-		return contentLength;
+		console.log(`file info = ${JSON.stringify(info)}`);
+
+		return info;
 	};
 
 	// id: Uid
-	const downloadFileInRanges = async (id, fileSize) => {
+	const downloadFileMultipart = async (id, url, fileSize, chunkSize, encAlg) => {
 		let downloaded = 0;
-		const ptFileSize = Math.ceil(fileSize / ctChunkSize) * ctChunkSize;
+		const ctChunkSize = chunkSize + aesAuthTagSize;
+		const numChunks = Math.ceil(fileSize / ctChunkSize);
+		// IMPORTANT: this works only for aes-gcm; respect other auth AEADs, if any
+		const ptFileSize = fileSize - (numChunks * aesAuthTagSize);
 		let pt = { offset: 0, data: new Uint8Array(ptFileSize) };
 		let chunkIdx = 0;
 
@@ -176,14 +197,21 @@ const App = () => {
 			const rangeStart = downloaded;
 			const rangeEnd = Math.min(downloaded + ctChunkSize - 1, fileSize - 1);
 
-			const chunk = await downloadChunk(id, rangeStart, rangeEnd);
-			const decrypted = await protocol.chunk_decrypt_for_file(new Uint8Array(await chunk.arrayBuffer()), id, chunkIdx);
+			const res = await fetch(url, {
+				method: 'GET',
+				headers: {
+					'Range': `bytes=${rangeStart}-${rangeEnd}`,
+				}
+			});
+
+			const chunk = await res.arrayBuffer();
+			const decrypted = await protocol.chunk_decrypt_for_file(new Uint8Array(chunk), id, chunkIdx);
 
 			pt.data.set(decrypted, pt.offset);
 			pt.offset += decrypted.byteLength;
 			cached_files[id.js_val()] = pt.data;
 
-			downloaded += chunk.size;
+			downloaded += chunk.byteLength;
 			chunkIdx += 1;
 
 			setProgress((prev) => ({
@@ -191,7 +219,7 @@ const App = () => {
 				[id.js_val()]: { val: (downloaded / fileSize) * 100, pending: downloaded != fileSize, cached: downloaded == fileSize }
 			}));
 
-			console.log(`Downloaded chunk ${rangeStart}-${rangeEnd} (${chunk.size} bytes)`);
+			console.log(`Downloaded chunk ${rangeStart}-${rangeEnd} (${chunk.byteLength} bytes)`);
 		}
 
 		return pt.data;
@@ -252,16 +280,8 @@ const App = () => {
 	}
 
 	// id: Uid
-	const uploadFileInRanges = async (id, file) => {
-		const numChunks = Math.ceil(file.size / ptChunkSize);
+	const uploadFileMultipart = async (id, file) => {
 		let readOffset = 0;
-		let chunkIdx = 0;
-		let encryptedOffset = 0;
-		// IMPORTANT: aes gcm is used, so auth tag is appended to the end of each chunk! It makes encrypted
-		// chunks 16 bytes larger than plain text ones; therefore, when downloading & decrypting,
-		// add aes auth tag (16 bytes) to chunk_size first
-		const encryptedFileSize = file.size + numChunks * aesAuthTagSize;
-
 		let toCache = { offset: 0, data: new Uint8Array(file.size) };
 		if (readOffset > 0) {
 			// ok, read the first readOffset bytes of what we suposedly have into a cache
@@ -269,140 +289,128 @@ const App = () => {
 			toCache.offset += readOffset;
 		}
 
-		while (readOffset < file.size) {
-			const chunk = new Uint8Array(await file.slice(readOffset, readOffset + ptChunkSize).arrayBuffer());
-			const encrypted = await protocol.chunk_encrypt_for_file(chunk, id, chunkIdx);
-
-			await uploadChunk(encrypted, encryptedOffset, encryptedFileSize, id);
-
-			encryptedOffset += encrypted.byteLength;
-			chunkIdx += 1;
-
-			toCache.data.set(chunk, toCache.offset);
-			toCache.offset += chunk.byteLength;
-			cached_files[id.js_val()] = toCache.data;
-
-			setProgress((prev) => ({
-				...prev,
-				[id.js_val()]: { val: (chunkIdx / numChunks) * 100, pending: chunkIdx != numChunks, cached: chunkIdx == numChunks }
-			}));
-
-			console.log(`${file.name} Uploaded chunk ${chunkIdx} / ${numChunks} of file ${file.name}; pending: ${(chunkIdx != numChunks)}`);
-
-			readOffset += ptChunkSize;
-		}
-
-		console.log(`File upload completed for ${file.name}`);
-	};
-
-	// id: Uid
-	const uploadChunk = async (chunk, offset, fileSize, id) => {
-		const url = `${host}/uploads/chunk`;
-		const response = await fetch(`${url}/${id.js_val()}`, {
+		let url = `${host}/uploads/start/${id.js_val()}`;
+		let response = await fetch(url, {
 			method: 'POST',
 			headers: {
-				'x-uploader-auth': 'aabb1122', // Replace with your auth token
-				'Content-Range': `bytes ${offset}-${offset + chunk.byteLength - 1}/${fileSize}`,
-				'Content-Type': 'application/octet-stream'
+			// 	'x-uploader-auth': 'aabb1122', // Replace with your auth token
+				'Content-Type': 'application/json'
 			},
-			body: chunk
+			body: JSON.stringify({ file_size: file.size })
 		});
 
 		if (!response.ok) {
 			throw new Error(`Failed to upload chunk: ${response.statusText}`);
 		}
-	};
 
-	// id: Uid
-	const uploadFileInStream = async (id, file) => {
-		// WARNING: may not work locally due to `net::ERR_H2_OR_QUIC_REQUIRED`
-		const url = `${host}/uploads/stream`;
-		let readOffset = 0;
-		const fileSize = file.size;
+		let res = await response.json();
+		console.log(`json: ${JSON.stringify(res)}`);
 
-		let toCache = { offset: 0, data: new Uint8Array(file.size) };
-		if (readOffset > 0) {
-			// ok, read the first readOffset bytes of what we suposedly have into a cache
-			toCache.data.set(new Uint8Array(await file.slice(0, readOffset).arrayBuffer()), 0);
-			toCache.offset += readOffset;
-		}
+		// const storedState = getUploadStateFromLocalStorage(file.name);
+		let uploadId = res.id;
+		let presignedUrls = res.chunk_urls;
+		let numChunks = presignedUrls.length;
+		let chunkSize = res.chunk_size;
+		let progress = 0;
+		const parts = [];
+		// find the best value for the given connection
+		// FIXME: keep global in case more than one file is being uploaded
+		const maxConcurrentUploads = 3;
+		let activeUploads = [];
 
-		const stream = new ReadableStream({
-			start(controller) {
-				let chunkIdx = 0;
+		for (let chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
+			// TODO: parallelize this
+			const readOffset = chunkIdx * chunkSize;
+			const chunk = new Uint8Array(await file.slice(readOffset, readOffset + chunkSize).arrayBuffer());
+			const encrypted = await protocol.chunk_encrypt_for_file(chunk, id, chunkIdx);
+			
+			toCache.data.set(chunk, toCache.offset);
+			toCache.offset += chunk.byteLength;
+			cached_files[id.js_val()] = toCache.data;
 
-				const push = async () => {
-					if (readOffset < file.size) {
+			// etags are indexed from 1
+			if (!parts.some(part => part.PartNumber === chunkIdx)) {
+				const uploadChunk = async (chunkIdx, data) => {
+					let success = false;
+					let retries = 0;
+					const maxRetries = 3;
+
+					while (!success && retries < maxRetries) {
 						try {
-							const chunk = new Uint8Array(await file.slice(readOffset, readOffset + ptChunkSize).arrayBuffer());
-							const encrypted = await protocol.chunk_encrypt_for_file(chunk, id, chunkIdx);
+							const response = await fetch(presignedUrls[chunkIdx], {
+								method: 'PUT',
+								body: data,
+							});
 
-							controller.enqueue(encrypted);
-							readOffset += ptChunkSize;
+							if (response.ok) {
+								const eTag = response.headers.get('ETag');
 
-							toCache.data.set(chunk, toCache.offset);
-							toCache.offset += chunk.byteLength;
-							cached_files[id.js_val()] = toCache.data;
+								parts.push({ ETag: eTag, idx: chunkIdx });
+								progress += 1;
+								// saveUploadStateToLocalStorage(file.name, uploadId, uploadedParts);
 
-							setProgress(prev => ({
-								...prev,
-								[id.js_val()]: { val: (readOffset / fileSize) * 100, pending: toCache.data.length != fileSize, cached: toCache.data.length == fileSize }
-							}));
-
-							console.log(`enqueued ${ptChunkSize}, uploaded ${readOffset}`)
-
-							chunkIdx += 1;
-
-							push();
+								success = true;
+							} else {
+								throw new Error(`Failed to upload part ${chunkIdx}`);
+							}
 						} catch (error) {
-							console.error(`Error reading or encrypting chunk:`, error);
-							controller.error(error);
+							retries++;
+							console.error(`Error uploading chunk ${chunkIdx}, retrying... (${retries}/${maxRetries})`);
 						}
-					} else {
-						controller.close();
 					}
+
+					if (!success) {
+						console.error(`Failed to upload chunk ${chunkIdx} after ${maxRetries} retries.`);
+						// Optionally handle failure here (e.g., notify the user)
+					}
+					
+					console.log(`${file.name} Uploaded chunk ${progress} / ${numChunks} of file ${file.name}; pending: ${(progress != numChunks)}`);
+					
+					setProgress((prev) => ({
+						...prev,
+						[id.js_val()]: { val: (progress / numChunks) * 100, pending: progress != numChunks, cached: progress == numChunks }
+					}));
+
 				};
 
-				push(); // Start reading and processing chunks
+				activeUploads.push(uploadChunk(chunkIdx, encrypted));
 			}
+
+			// throttle uploads
+			if (activeUploads.length >= maxConcurrentUploads) {
+				await Promise.all(activeUploads);
+				activeUploads = [];
+			}
+		}
+
+		//  finish remaining uploads, if any
+		if (activeUploads.length > 0) {
+			await Promise.all(activeUploads);
+		}
+
+		// clearUploadStateFromLocalStorage(file.name);
+
+		console.log(`calling finish_upload`);
+
+		url = `${host}/uploads/finish/${id.js_val()}`;
+		
+		response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(
+				{
+					upload_id: uploadId, 
+					// etags are indexed from 1
+					parts: parts.map(part => ({ part_number: part.idx + 1, e_tag: part.ETag }))
+				}
+			)
 		});
 
-		try {
-			const response = await fetch(`${url}/${id.js_val()}`, {
-				method: 'POST',
-				headers: {
-					'x-uploader-auth': 'aabb1122',
-					// TODO: it could be possible to start streaming from a specific offset, hence conten-range
-					// this is sent only for the first chunk, so no need to accumulate encryptedOffset
-					'Content-Range': `bytes ${readOffset}-${readOffset + fileSize - 1}/${fileSize}`,
-				},
-				body: stream,
-				duplex: 'half'
-			});
-
-			console.log(`response: ${response.statusText}`);
-		} catch (error) {
-			console.error(`Error uploading file:`, error);
+		if (!response.ok) {
+			throw new Error(`Failed to upload chunk: ${response.statusText}`);
 		}
-	};
-
-	// id: Uid
-	const uploadFileInBulk = async (id, file) => {
-		const offset = 0;
-		const data = new Uint8Array(await file.arrayBuffer());
-		const ct = await protocol.encrypt_block_for_file(data, id);
-		const fileSize = ct.byteLength;
-
-		console.log(`Uploading whole file: Start: ${offset}, End: ${fileSize - 1}, Total size: ${fileSize}`);
-
-		await uploadChunk(ct, offset, fileSize, id);
-
-		cached_files[id.js_val()] = data;
-
-		setProgress(prev => ({
-			...prev,
-			[id.js_val()]: { val: 100, pending: false, cached: true }
-		}));
 
 		console.log(`File upload completed for ${file.name}`);
 	};
