@@ -95,7 +95,7 @@ const getUser = async (userId) => {
 
 // email: base64-encoded string
 const getInvite = async (email) => {
-	const res = await fetch(`${host}/invite/${email}`, {
+	const res = await fetch(`${host}/invite/pinned/${email}`, {
 		method: 'GET',
 		headers: {
 			'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ const getInvite = async (email) => {
 };
 
 const invite = async (json) => {
-	const res = await fetch(`${host}/invite`, {
+	const res = await fetch(`${host}/invite/pinned`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
@@ -122,6 +122,51 @@ const invite = async (json) => {
 		throw new Error(`Failed to invite user: ${res.statusText}`);
 	}
 };
+
+const startInviteIntent = async (json) => {
+	const res = await fetch(`${host}/invite/intent/start`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: json
+	});
+
+	if (!res.ok) {
+		throw new Error(`Failed to start an invite intent: ${res.statusText}`);
+	}
+};
+
+const getInviteIntent = async (email) => {
+	const res = await fetch(`${host}/invite/intent/fetch/${email}`, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!res.ok) {
+		throw new Error(`Failed to get an invite intent: ${res.statusText}`);
+	}
+
+	return await res.text();
+};
+
+const finishInviteIntents = async (json) => {
+	const res = await fetch(`${host}/invite/intent/finish/`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: json
+	});
+
+	if (!res.ok) {
+		throw new Error(`Failed to finish pending invite intens: ${res.statusText}`);
+	}
+};
+
+// FIXME: implement share_to_pk
 
 // tokenId: base64-encoded string
 const lockSession = async (tokenId, token) => {
@@ -218,7 +263,7 @@ const finishPasskeyAuth = async (authId, auth) => {
 };
 
 function netCallbacks() {
-	return new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, invite, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
+	return new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, invite, startInviteIntent, getInviteIntent, finishInviteIntents, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
 };
 
 export { netCallbacks, domain, host }

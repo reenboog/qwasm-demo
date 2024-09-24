@@ -23,6 +23,7 @@ const State = {
 	Restoring: 'RESTORING',
 	Authenticating: 'AUTHENTICATING',
 	Ready: 'READY',
+	Acked: 'ACKED',
 	Unauthenticated: 'UNAUTHENTICATED'
 };
 
@@ -254,6 +255,7 @@ const App = () => {
 	const handleLogoutClick = async () => {
 		console.log('logging off...');
 
+		// RECONSIDER: if protocol != NULL?
 		await protocol.logout();
 
 		setState(State.Unauthenticated);
@@ -273,7 +275,9 @@ const App = () => {
 		console.log('add user' + email + ' ' + pin);
 
 		try {
-			await protocol.invite_with_all_seeds_for_email(email, pin);
+			// RECONSIDER: rely on a flag here
+			// await protocol.invite_with_all_seeds_for_email(email, pin);
+			await protocol.invite_with_all_seeds_for_email_no_pin(email);
 		} catch (e) {
 			console.log(`Failed to add user: ${e}`);
 		}
@@ -431,14 +435,17 @@ const App = () => {
 			let protocol;
 
 			if (pin) {
-				protocol = await Protocol.register_as_admin(email, pass, pin, net, rememberMe);
+				// RECONSIDER: return a protocol, but check its inner field – `is_pending_signup()`
+				// no pin signup is possible, but it won't return a Protocol instance
+				// protocol = await Protocol.register_as_admin_with_pin(email, pass, pin, net, rememberMe);
+				await Protocol.register_as_admin_no_pin(email, pass, net, rememberMe);
+				setState(State.Acked);
 			} else {
 				protocol = await Protocol.register_as_god(email, pass, net, rememberMe);
+				setState(State.Ready);
+				setProtocol(protocol);
+				setCurrentDir(await protocol.ls_cur_mut());
 			}
-
-			setState(State.Ready);
-			setProtocol(protocol);
-			setCurrentDir(await protocol.ls_cur_mut());
 		} catch (e) {
 			console.log(`Error signing up: ${e}`);
 			alert('Failed to signup');
@@ -548,6 +555,12 @@ const App = () => {
 			)}
 			{state === State.Unauthenticated && (
 				<AuthPage onSignupClick={handleSignup} onLoginClick={handleLogin} onAuthPasskey={handleAuthPaskey} />
+			)}
+			{/* RECONSIDER: rely on protocol.is_pending_signup */}
+			{state === State.Acked && (
+				<Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+					Be patient, unworthy one. God has been notified.
+				</Box>
 			)}
 			{state === State.Ready && protocol !== null && currentDir !== null && (
 				<Workspace
