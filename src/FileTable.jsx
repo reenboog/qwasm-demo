@@ -8,6 +8,7 @@ import DropToUpload from './DropToUpload';
 const FileTable = ({
 	currentDir,
 	onItemClick,
+	onItemDelete,
 	onBackClick,
 	onBreadcrumbClick,
 	onAddUserClick,
@@ -34,7 +35,8 @@ const FileTable = ({
 							<Stack direction='row' alignItems='center' justifyContent='flex-start'>
 								<Box sx={{ width: '50%' }}>Name</Box>
 								<Box sx={{ width: '30%' }}>Created At</Box>
-								<Box sx={{ width: '20%' }}>Type</Box>
+								<Box sx={{ width: '15%' }}>Type</Box>
+								<Box sx={{ width: '5%' }}></Box>
 							</Stack>
 						</TableCell>
 					</TableRow>
@@ -42,7 +44,7 @@ const FileTable = ({
 				<TableBody>
 					{currentDir.breadcrumbs().length !== 0 && (
 						<TableRow key="back" onClick={onBackClick} sx={{ cursor: 'pointer' }}>
-							<TableCell colSpan={3}>
+							<TableCell colSpan={4}>
 								<Box sx={{ display: 'flex', alignItems: 'center' }}>
 									<Box className='file-icon-container' ><FileIcon ext={null} /></Box>
 									{'..'}
@@ -51,7 +53,7 @@ const FileTable = ({
 						</TableRow>
 					)}
 					{currentDir.items().map((item, index) => (
-						<FileTableRow key={index} item={item} onClick={onItemClick} progress={progress[item.id().js_val()] || { val: 0, pending: false, cached: false }} thumb={thumbs[item.id().js_val()]} />
+						<FileTableRow key={index} item={item} onClick={onItemClick} onDelete={onItemDelete} progress={progress[item.id().js_val()] || { val: 0, pending: false, cached: false }} thumb={thumbs[item.id().js_val()]} />
 					))}
 				</TableBody>
 			</Table>

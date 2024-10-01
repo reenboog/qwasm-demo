@@ -49,8 +49,26 @@ const uploadNodes = async (json) => {
 	});
 
 	if (!response.ok) {
-		throw new Error(`Failed to upload chunk: ${response.statusText}`);
+		throw new Error(`Failed to upload nodes: ${response.statusText}`);
 	}
+};
+
+const deleteNodes = async (json) => {
+	const url = `${host}/nodes`;
+
+	const response = await fetch(`${url}`, {
+		method: 'DELETE',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: json
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to delete nodes: ${response.statusText}`);
+	}
+
+	return await response.text();
 };
 
 // userId: base64-encoded string
@@ -263,7 +281,7 @@ const finishPasskeyAuth = async (authId, auth) => {
 };
 
 function netCallbacks() {
-	return new JsNet(signup, unlock, fetchSubtree, uploadNodes, getMk, getUser, getInvite, invite, startInviteIntent, getInviteIntent, finishInviteIntents, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
+	return new JsNet(signup, unlock, fetchSubtree, uploadNodes, deleteNodes, getMk, getUser, getInvite, invite, startInviteIntent, getInviteIntent, finishInviteIntents, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
 };
 
 export { netCallbacks, domain, host }

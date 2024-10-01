@@ -46,6 +46,14 @@ const App = () => {
 		}
 	};
 
+	const handleItemDelete = async (node) => {
+		console.log(`deleting node: ${node.id().js_val()}`);
+
+		await protocol.delete_node(node.id());
+		
+		setCurrentDir(await protocol.ls_cur_mut());
+	}
+
 	// id: Uid
 	const openFile = async (id) => {
 		console.log(`Opening file: ${id.js_val()}`);
@@ -566,6 +574,7 @@ const App = () => {
 				<Workspace
 					currentDir={currentDir}
 					onItemClick={handleRowClick}
+					onItemDelete={handleItemDelete}
 					onBackClick={handleBackClick}
 					onBreadcrumbClick={handleBreadcrumbClick}
 					onAddUserClick={handleAddUser}

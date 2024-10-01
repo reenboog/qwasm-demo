@@ -9,6 +9,7 @@ import Settings from './Settings';
 const Workspace = ({
 	currentDir,
 	onItemClick,
+	onItemDelete,
 	onBackClick,
 	onBreadcrumbClick,
 	onAddUserClick,
@@ -29,6 +30,7 @@ const Workspace = ({
 				return <FileTable
 					currentDir={currentDir}
 					onItemClick={onItemClick}
+					onItemDelete={onItemDelete}
 					onBackClick={onBackClick}
 					onBreadcrumbClick={onBreadcrumbClick}
 					onAddUserClick={onAddUserClick}

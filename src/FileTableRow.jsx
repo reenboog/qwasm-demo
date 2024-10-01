@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Box, TableRow, TableCell, Stack, Typography } from '@mui/material';
+import { IconButton, Box, TableRow, TableCell, Stack, Typography } from '@mui/material';
 import FileIcon from './FileIcon';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { truncName } from './utils';
 
-const FileTableRow = ({ item, onClick, progress, thumb }) => {
+const FileTableRow = ({ item, onClick, onDelete, progress, thumb }) => {
 	const handleClick = () => {
 		if (!progress.pending || item.is_dir()) {
 			onClick(item);
 		}
+	};
+
+	const handleDelete = (event) => {
+		event.stopPropagation();
+		onDelete(item);
 	};
 
 	return (
@@ -31,8 +37,13 @@ const FileTableRow = ({ item, onClick, progress, thumb }) => {
 						<Box sx={{ width: '30%' }}>
 							{new Date(Number(item.created_at())).toLocaleString()}
 						</Box>
-						<Box sx={{ width: '20%' }}>
+						<Box sx={{ width: '15%' }}>
 							{item.ext() ?? 'dir'}
+						</Box>
+						<Box sx={{ width: '5%' }} className="delete-icon">
+							<IconButton onClick={handleDelete}>
+								<DeleteIcon sx={{ color: '#d73a49' }}/>
+							</IconButton>
 						</Box>
 					</Stack>
 					{!progress.cached && (
