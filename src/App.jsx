@@ -468,6 +468,8 @@ const App = () => {
 		try {
 			const protocol = await Protocol.unlock_with_pass(email, pass, net, rememberMe);
 
+			console.log(`pending signup: ${protocol.is_pending_signup()}`);
+
 			setState(State.Ready);
 			setProtocol(protocol);
 			setCurrentDir(await protocol.ls_cur_mut());
