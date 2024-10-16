@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IconButton, Box, TableRow, TableCell, Stack, Typography } from '@mui/material';
 import FileIcon from './FileIcon';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { truncName } from './utils';
+import { truncName, formatBytes } from './utils';
 
 const FileTableRow = ({ item, onClick, onDelete, progress, thumb }) => {
 	const handleClick = () => {
@@ -34,8 +34,11 @@ const FileTableRow = ({ item, onClick, onDelete, progress, thumb }) => {
 							</Box>
 							<Typography noWrap variant='body2'>{item.name()}</Typography>
 						</Box>
-						<Box sx={{ width: '30%' }}>
+						<Box sx={{ width: '20%' }}>
 							{new Date(Number(item.created_at())).toLocaleString()}
+						</Box>
+						<Box sx={{ width: '10%' }}>
+							{item.is_dir() ? '-' : formatBytes(item.size())}
 						</Box>
 						<Box sx={{ width: '15%' }}>
 							{item.ext() ?? 'dir'}

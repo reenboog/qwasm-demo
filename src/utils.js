@@ -50,4 +50,18 @@ function bufferToString(buffer) {
 	return new TextDecoder().decode(buffer);
 }
 
-export { validateEmail, truncName, genPin, genThumb, base64ToUint8Array, bufferToBase64, bufferToString };
+function formatBytes(bytes) {
+	const units = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+	let index = 0;
+
+	// Manually scale bytes to the appropriate unit
+	while (bytes >= 1024 && index < units.length - 1) {
+			bytes /= 1024;
+			index++;
+	}
+
+	// Format the number to two decimal places
+	return `${bytes.toFixed(2)} ${units[index]}`;
+}
+
+export { validateEmail, truncName, genPin, genThumb, base64ToUint8Array, bufferToBase64, bufferToString, formatBytes };

@@ -127,7 +127,7 @@ const App = () => {
 				console.log(`Ext: ${ext}`);
 
 				// id: Uid
-				let id = await protocol.touch(file.name, ext);
+				let id = await protocol.touch(file.size, file.name, ext);
 
 				if (['jpg', 'jpeg', 'png', 'gif', 'avif', 'webp'].includes(ext.toLowerCase())) {
 					const thumb = await genThumb(file);
@@ -316,7 +316,7 @@ const App = () => {
 		}
 
 		let res = await response.json();
-		console.log(`json: ${JSON.stringify(res)}`);
+		// console.log(`json: ${JSON.stringify(res)}`);
 
 		// const storedState = getUploadStateFromLocalStorage(file.name);
 		let uploadId = res.id;

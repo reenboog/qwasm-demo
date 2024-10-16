@@ -34,7 +34,8 @@ const FileTable = ({
 						<TableCell>
 							<Stack direction='row' alignItems='center' justifyContent='flex-start'>
 								<Box sx={{ width: '50%' }}>Name</Box>
-								<Box sx={{ width: '30%' }}>Created At</Box>
+								<Box sx={{ width: '20%' }}>Created At</Box>
+								<Box sx={{ width: '10%' }}>Size</Box>
 								<Box sx={{ width: '15%' }}>Type</Box>
 								<Box sx={{ width: '5%' }}></Box>
 							</Stack>
