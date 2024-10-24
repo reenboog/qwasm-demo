@@ -111,9 +111,9 @@ const getUser = async (userId) => {
 	return await response.text();
 };
 
-// email: base64-encoded string
-const getInvite = async (email) => {
-	const res = await fetch(`${host}/invite/pinned/${email}`, {
+// refSrc: base64-encoded string
+const getInvite = async (refSrc) => {
+	const res = await fetch(`${host}/invite/pinned/${refSrc}`, {
 		method: 'GET',
 		headers: {
 			'Content-Type': 'application/json',
@@ -155,8 +155,8 @@ const startInviteIntent = async (json) => {
 	}
 };
 
-const getInviteIntent = async (email) => {
-	const res = await fetch(`${host}/invite/intent/fetch/${email}`, {
+const getInviteIntent = async (refSrc) => {
+	const res = await fetch(`${host}/invite/intent/fetch/${refSrc}`, {
 		method: 'GET',
 		headers: {
 			'Content-Type': 'application/json',
