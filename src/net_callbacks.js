@@ -184,6 +184,22 @@ const finishInviteIntents = async (json) => {
 	}
 };
 
+// json: a serialized LockedShare
+const exportSeedsToIdentity = async (json) => {
+	// this should be a proper endpoint
+	const res = await fetch(`${host}/share`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: json
+	});
+
+	if (!res.ok) {
+		throw new Error(`Failed to finish pending invite intens: ${res.statusText}`);
+	}
+};
+
 // FIXME: implement share_to_pk
 
 // tokenId: base64-encoded string
@@ -281,7 +297,7 @@ const finishPasskeyAuth = async (authId, auth) => {
 };
 
 function netCallbacks() {
-	return new JsNet(signup, unlock, fetchSubtree, uploadNodes, deleteNodes, getMk, getUser, getInvite, invite, startInviteIntent, getInviteIntent, finishInviteIntents, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
+	return new JsNet(signup, unlock, fetchSubtree, uploadNodes, deleteNodes, getMk, getUser, getInvite, invite, startInviteIntent, getInviteIntent, finishInviteIntents, exportSeedsToIdentity, lockSession, unlockSession, startPasskeyRegistration, finishPasskeyRegistration, startPasskeyAuth, finishPasskeyAuth);
 };
 
 export { netCallbacks, domain, host }
